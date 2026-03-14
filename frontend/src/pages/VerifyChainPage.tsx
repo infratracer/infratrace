@@ -2,10 +2,7 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { verifyChain, verifyBlockchain } from "../api/verification";
 import { getDecisions } from "../api/decisions";
-import GlassCard from "../components/ui/GlassCard";
-import Button from "../components/ui/Button";
-import Badge from "../components/ui/Badge";
-import { Shield, Link2, Check, X, ExternalLink } from "lucide-react";
+import { useTheme } from "../hooks/useTheme";
 import { truncateHash } from "../utils/format";
 import { env } from "../config/env";
 import type { ChainVerification, BlockchainVerification } from "../types";
@@ -17,6 +14,7 @@ export default function VerifyChainPage() {
   const [verifyingChain, setVerifyingChain] = useState(false);
   const [verifyingBlockchain, setVerifyingBlockchain] = useState(false);
   const [progress, setProgress] = useState(0);
+  const t = useTheme();
 
   const handleVerifyChain = async () => {
     if (!id) return;
@@ -73,93 +71,184 @@ export default function VerifyChainPage() {
     }
   };
 
+  const glassCard: React.CSSProperties = {
+    background: t.bgCard,
+    backdropFilter: "blur(40px) saturate(180%)",
+    WebkitBackdropFilter: "blur(40px) saturate(180%)",
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 18,
+    boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
+    padding: "20px",
+  };
+
+  const buttonPrimary: React.CSSProperties = {
+    padding: "10px 20px",
+    background: t.accent,
+    border: "none",
+    borderRadius: 10,
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: 600,
+    fontFamily: "inherit",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    boxShadow: t.btnShadow,
+  };
+
+  const buttonSecondary: React.CSSProperties = {
+    ...buttonPrimary,
+    background: "transparent",
+    border: `1px solid ${t.glassBorder}`,
+    color: t.textPrimary,
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in max-w-3xl">
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 768 }}>
       {/* Local Chain Verification */}
-      <GlassCard padding="lg">
-        <div className="flex items-center gap-2 mb-4">
-          <Link2 size={18} className="text-accent" />
-          <h2 className="text-[15px] font-semibold" style={{ color: "var(--text-primary)" }}>
+      <div style={{ ...glassCard, padding: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <span style={{ fontSize: 18, color: t.accent }}>⛓</span>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, margin: 0 }}>
             Local Hash Chain Verification
           </h2>
         </div>
-        <p className="text-[12px] mb-4" style={{ color: "var(--text-secondary)" }}>
+        <p style={{ fontSize: 12, marginBottom: 16, color: t.textSecondary }}>
           Recomputes SHA-256 hashes for all decisions and verifies chain integrity.
         </p>
 
         {verifyingChain && (
-          <div className="mb-4">
-            <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--color-divider)" }}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ height: 8, borderRadius: 9999, overflow: "hidden", backgroundColor: t.divider }}>
               <div
-                className="h-full rounded-full bg-accent transition-all duration-300"
-                style={{ width: `${progress}%` }}
+                style={{
+                  height: "100%",
+                  borderRadius: 9999,
+                  background: t.accent,
+                  transition: "all 0.3s",
+                  width: `${progress}%`,
+                }}
               />
             </div>
-            <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
+            <p style={{ fontSize: 11, marginTop: 4, color: t.textMuted }}>
               Verifying records...
             </p>
           </div>
         )}
 
         {chainResult && (
-          <div className={`flex items-center gap-3 p-3 rounded-xl mb-4 ${chainResult.valid ? "bg-neon-green-dim" : "bg-neon-red-dim"}`}>
-            {chainResult.valid ? (
-              <Check size={18} className="text-neon-green" />
-            ) : (
-              <X size={18} className="text-neon-red" />
-            )}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: 12,
+              borderRadius: 12,
+              marginBottom: 16,
+              background: chainResult.valid ? t.neonGreenDim : t.neonRedDim,
+            }}
+          >
+            <span style={{ fontSize: 18, color: chainResult.valid ? t.neonGreen : t.neonRed }}>
+              {chainResult.valid ? "✓" : "✕"}
+            </span>
             <div>
-              <p className="text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: t.textPrimary, margin: 0 }}>
                 {chainResult.valid ? "Chain Intact" : "Chain Broken"}
               </p>
-              <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+              <p style={{ fontSize: 11, color: t.textSecondary, margin: 0 }}>
                 {chainResult.message}
               </p>
             </div>
           </div>
         )}
 
-        <Button onClick={handleVerifyChain} loading={verifyingChain}>
-          <Link2 size={14} /> Verify Hash Chain
-        </Button>
-      </GlassCard>
+        <button
+          onClick={handleVerifyChain}
+          disabled={verifyingChain}
+          style={{
+            ...buttonPrimary,
+            opacity: verifyingChain ? 0.6 : 1,
+            cursor: verifyingChain ? "not-allowed" : "pointer",
+          }}
+        >
+          <span>⛓</span> {verifyingChain ? "Verifying..." : "Verify Hash Chain"}
+        </button>
+      </div>
 
       {/* Blockchain Verification */}
-      <GlassCard padding="lg">
-        <div className="flex items-center gap-2 mb-4">
-          <Shield size={18} className="text-accent" />
-          <h2 className="text-[15px] font-semibold" style={{ color: "var(--text-primary)" }}>
+      <div style={{ ...glassCard, padding: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+          <span style={{ fontSize: 18, color: t.accent }}>🛡</span>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, margin: 0 }}>
             Blockchain Verification
           </h2>
         </div>
-        <p className="text-[12px] mb-4" style={{ color: "var(--text-secondary)" }}>
+        <p style={{ fontSize: 12, marginBottom: 16, color: t.textSecondary }}>
           Verifies each decision against on-chain anchors on Polygon Amoy.
         </p>
 
         {blockchainResults.length > 0 && (
-          <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16, maxHeight: 300, overflowY: "auto" }}>
             {blockchainResults.map((r, i) => (
               <div
                 key={r.decision_id}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg"
-                style={{ backgroundColor: "var(--bg-card)" }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  backgroundColor: t.bgCard,
+                }}
               >
-                <span className="text-[11px] font-mono" style={{ color: "var(--text-muted)" }}>
+                <span style={{ fontSize: 11, fontFamily: "monospace", color: t.textMuted }}>
                   #{i + 1}
                 </span>
                 {r.on_chain ? (
-                  <Badge variant="chain-verified">Verified</Badge>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      padding: "2px 8px",
+                      borderRadius: 6,
+                      background: t.neonGreenDim,
+                      color: t.neonGreen,
+                    }}
+                  >
+                    Verified
+                  </span>
                 ) : (
-                  <Badge variant="chain-pending">Not Anchored</Badge>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      padding: "2px 8px",
+                      borderRadius: 6,
+                      background: t.neonAmberDim,
+                      color: t.neonAmber,
+                    }}
+                  >
+                    Not Anchored
+                  </span>
                 )}
                 {r.tx_hash && (
                   <a
                     href={`${env.POLYGONSCAN_URL}/tx/${r.tx_hash}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-accent text-[10px] font-mono inline-flex items-center gap-1 hover:underline ml-auto"
+                    style={{
+                      color: t.accent,
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      textDecoration: "none",
+                      marginLeft: "auto",
+                    }}
                   >
-                    {truncateHash(r.tx_hash, 6)} <ExternalLink size={10} />
+                    {truncateHash(r.tx_hash, 6)} <span>↗</span>
                   </a>
                 )}
               </div>
@@ -167,10 +256,18 @@ export default function VerifyChainPage() {
           </div>
         )}
 
-        <Button onClick={handleVerifyBlockchain} loading={verifyingBlockchain} variant="secondary">
-          <Shield size={14} /> Verify On-Chain
-        </Button>
-      </GlassCard>
+        <button
+          onClick={handleVerifyBlockchain}
+          disabled={verifyingBlockchain}
+          style={{
+            ...buttonSecondary,
+            opacity: verifyingBlockchain ? 0.6 : 1,
+            cursor: verifyingBlockchain ? "not-allowed" : "pointer",
+          }}
+        >
+          <span>🛡</span> {verifyingBlockchain ? "Verifying..." : "Verify On-Chain"}
+        </button>
+      </div>
     </div>
   );
 }

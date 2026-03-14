@@ -1,15 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getDecisions } from "../api/decisions";
-import GlassCard from "../components/ui/GlassCard";
-import Badge from "../components/ui/Badge";
-import Spinner from "../components/ui/Spinner";
 import { formatDate, formatCurrency, truncateHash } from "../utils/format";
-import { decisionTypeBadgeVariant, decisionTypeLabel, riskBadgeVariant } from "../utils/risk";
+import { decisionTypeLabel, riskColor } from "../utils/risk";
 import type { Decision } from "../types";
 import { DECISION_TYPES } from "../utils/constants";
-import { Inbox } from "lucide-react";
-import EmptyState from "../components/ui/EmptyState";
+import { useTheme } from "../hooks/useTheme";
 
 export default function TimelinePage() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +13,7 @@ export default function TimelinePage() {
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("");
+  const t = useTheme();
 
   useEffect(() => {
     if (!id) return;
@@ -32,24 +29,63 @@ export default function TimelinePage() {
     })();
   }, [id, filter]);
 
+
+  const glassCard: React.CSSProperties = {
+    background: t.bgCard,
+    backdropFilter: "blur(40px) saturate(180%)",
+    WebkitBackdropFilter: "blur(40px) saturate(180%)",
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 18,
+    boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
+    padding: "20px",
+  };
+
+  const badge = (bg: string, color: string): React.CSSProperties => ({
+    display: "inline-block",
+    fontSize: 10,
+    fontWeight: 600,
+    padding: "2px 8px",
+    borderRadius: 9999,
+    background: bg,
+    color,
+    lineHeight: "18px",
+  });
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size={32} className="text-accent" />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 256 }}>
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            border: `3px solid ${t.accentDim}`,
+            borderTopColor: t.accent,
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+          }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* Filter bar */}
-      <div className="flex flex-wrap gap-2">
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <button
           onClick={() => setFilter("")}
-          className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
-            !filter ? "bg-accent text-white" : "border border-glass-border"
-          }`}
-          style={{ color: filter ? "var(--text-secondary)" : undefined }}
+          style={{
+            padding: "6px 12px",
+            borderRadius: 8,
+            fontSize: 11,
+            fontWeight: 500,
+            cursor: "pointer",
+            transition: "all 0.15s",
+            fontFamily: "inherit",
+            background: !filter ? t.accent : "transparent",
+            color: !filter ? "#fff" : t.textSecondary,
+            border: !filter ? "none" : `1px solid ${t.glassBorder}`,
+          }}
         >
           All
         </button>
@@ -57,10 +93,18 @@ export default function TimelinePage() {
           <button
             key={dt.value}
             onClick={() => setFilter(dt.value)}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
-              filter === dt.value ? "bg-accent text-white" : "border border-glass-border"
-            }`}
-            style={{ color: filter === dt.value ? undefined : "var(--text-secondary)" }}
+            style={{
+              padding: "6px 12px",
+              borderRadius: 8,
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: "pointer",
+              transition: "all 0.15s",
+              fontFamily: "inherit",
+              background: filter === dt.value ? t.accent : "transparent",
+              color: filter === dt.value ? "#fff" : t.textSecondary,
+              border: filter === dt.value ? "none" : `1px solid ${t.glassBorder}`,
+            }}
           >
             {dt.label}
           </button>
@@ -69,71 +113,126 @@ export default function TimelinePage() {
 
       {/* Decision list */}
       {decisions.length === 0 ? (
-        <EmptyState icon={Inbox} title="No decisions found" description="No decisions match the current filter." />
+        <div
+          style={{
+            ...glassCard,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 48,
+            gap: 12,
+          }}
+        >
+          <span style={{ fontSize: 32 }}>{"📭"}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: t.textPrimary }}>No decisions found</span>
+          <span style={{ fontSize: 12, color: t.textSecondary }}>No decisions match the current filter.</span>
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {decisions.map((d, i) => (
-            <GlassCard
+            <div
               key={d.id}
-              hover
               onClick={() => navigate(`/project/${id}/decision/${d.id}`)}
-              padding="md"
+              style={{
+                ...glassCard,
+                cursor: "pointer",
+                transition: "border-color 0.15s, background 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = t.glassBorderHover;
+                e.currentTarget.style.background = t.bgCardHover;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = t.glassBorder;
+                e.currentTarget.style.background = t.bgCard;
+              }}
             >
-              <div className="flex items-start gap-4">
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
                 {/* Sequence number */}
-                <div className="flex flex-col items-center shrink-0">
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-mono font-bold"
                     style={{
-                      backgroundColor: "var(--bg-card)",
-                      color: "var(--text-primary)",
-                      border: "1px solid var(--color-glass-border)",
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 12,
+                      fontFamily: "monospace",
+                      fontWeight: 700,
+                      backgroundColor: t.bgCard,
+                      color: t.textPrimary,
+                      border: `1px solid ${t.glassBorder}`,
                     }}
                   >
                     {d.sequence_number}
                   </div>
                   {i < decisions.length - 1 && (
-                    <div className="w-px h-6 mt-1" style={{ backgroundColor: "var(--color-glass-border)" }} />
+                    <div
+                      style={{
+                        width: 1,
+                        height: 24,
+                        marginTop: 4,
+                        backgroundColor: t.glassBorder,
+                      }}
+                    />
                   )}
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <Badge variant={decisionTypeBadgeVariant(d.decision_type)}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                    <span style={badge(t.accentDim, t.accent)}>
                       {decisionTypeLabel(d.decision_type)}
-                    </Badge>
-                    <Badge variant={riskBadgeVariant(d.risk_level)}>{d.risk_level}</Badge>
+                    </span>
+                    <span
+                      style={badge(
+                        d.risk_level === "low" ? t.neonGreenDim :
+                        d.risk_level === "medium" ? t.neonAmberDim : t.neonRedDim,
+                        riskColor(d.risk_level)
+                      )}
+                    >
+                      {d.risk_level}
+                    </span>
                     {d.blockchain_tx && (
-                      <Badge variant="chain-verified">On-chain</Badge>
+                      <span style={badge(t.tealDim, t.teal)}>On-chain</span>
                     )}
                     {d.sensor_trigger_id && (
-                      <Badge variant="iot-triggered">IoT Triggered</Badge>
+                      <span style={badge(t.neonAmberDim, t.neonAmber)}>IoT Triggered</span>
                     )}
                   </div>
 
-                  <h3
-                    className="text-[15px] font-semibold mb-1"
-                    style={{ color: "var(--text-primary)" }}
-                  >
+                  <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: t.textPrimary }}>
                     {d.title}
                   </h3>
-                  <p className="text-[12px] line-clamp-2 mb-2" style={{ color: "var(--text-secondary)" }}>
+                  <p
+                    style={{
+                      fontSize: 12,
+                      color: t.textSecondary,
+                      marginBottom: 8,
+                      overflow: "hidden",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                    }}
+                  >
                     {d.description}
                   </p>
 
-                  <div className="flex items-center gap-4 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 10, color: t.textMuted }}>
                     <span>{formatDate(d.created_at)}</span>
                     {d.cost_impact !== 0 && (
-                      <span style={{ color: d.cost_impact > 0 ? "#FF3366" : "#00FF88" }}>
+                      <span style={{ color: d.cost_impact > 0 ? t.neonRed : t.neonGreen }}>
                         {d.cost_impact > 0 ? "+" : ""}{formatCurrency(d.cost_impact)}
                       </span>
                     )}
-                    <span className="font-mono">{truncateHash(d.hash, 6)}</span>
+                    <span style={{ fontFamily: "monospace" }}>{truncateHash(d.hash, 6)}</span>
                   </div>
                 </div>
               </div>
-            </GlassCard>
+            </div>
           ))}
         </div>
       )}

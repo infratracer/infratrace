@@ -4,14 +4,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { createDecision } from "../api/decisions";
-import GlassCard from "../components/ui/GlassCard";
-import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
-import TextArea from "../components/ui/TextArea";
-import Select from "../components/ui/Select";
 import { DECISION_TYPES, RISK_LEVELS } from "../utils/constants";
 import { useAuthStore } from "../store/authStore";
-import { Check, Hash, Link2, Shield } from "lucide-react";
+import { useTheme } from "../hooks/useTheme";
 
 const decisionSchema = z.object({
   decision_type: z.string().min(1, "Required"),
@@ -32,6 +27,7 @@ export default function LogDecisionPage() {
   const [phase, setPhase] = useState<SubmitPhase>("idle");
   const [newDecisionId, setNewDecisionId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const t = useTheme();
 
   const {
     register,
@@ -72,125 +68,248 @@ export default function LogDecisionPage() {
     }
   };
 
+  const glassCard = {
+    background: t.bgCard,
+    backdropFilter: "blur(40px) saturate(180%)",
+    WebkitBackdropFilter: "blur(40px) saturate(180%)",
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 18,
+    boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
+    padding: "20px",
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 14px",
+    background: t.bgInput,
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 10,
+    color: t.textPrimary,
+    fontSize: 13,
+    outline: "none",
+    boxSizing: "border-box" as const,
+    fontFamily: "inherit",
+  };
+
+  const overline = {
+    fontSize: 9,
+    fontWeight: 600,
+    letterSpacing: "0.12em",
+    textTransform: "uppercase" as const,
+    color: t.textMuted,
+  };
+
+  const buttonStyle = {
+    padding: "10px 20px",
+    background: t.accent,
+    border: "none",
+    borderRadius: 10,
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    boxShadow: t.btnShadow,
+  };
+
   if (phase !== "idle" && phase !== "done") {
     return (
-      <div className="flex items-center justify-center h-64 animate-fade-in">
-        <GlassCard padding="lg" className="text-center max-w-sm w-full">
-          <div className="space-y-4">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 256 }}>
+        <div style={{ ...glassCard, textAlign: "center", maxWidth: 384, width: "100%" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <StepIndicator phase={phase} />
           </div>
-        </GlassCard>
+        </div>
       </div>
     );
   }
 
   if (phase === "done") {
     return (
-      <div className="flex items-center justify-center h-64 animate-fade-in">
-        <GlassCard padding="lg" glow="green" className="text-center max-w-sm w-full">
-          <div className="w-12 h-12 rounded-full bg-neon-green-dim flex items-center justify-center mx-auto mb-4">
-            <Check size={24} className="text-neon-green" />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 256 }}>
+        <div style={{ ...glassCard, textAlign: "center", maxWidth: 384, width: "100%", boxShadow: `0 0 20px ${t.neonGreenDim}` }}>
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: "50%",
+              background: t.neonGreenDim,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 16px",
+            }}
+          >
+            <span style={{ fontSize: 24, color: t.neonGreen }}>{"✓"}</span>
           </div>
-          <h2 className="text-[17px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
+          <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 4, color: t.textPrimary }}>
             Decision Recorded
           </h2>
-          <p className="text-[12px] mb-4" style={{ color: "var(--text-secondary)" }}>
+          <p style={{ fontSize: 12, marginBottom: 16, color: t.textSecondary }}>
             Hash chain updated and blockchain anchoring initiated.
           </p>
-          <Button onClick={() => navigate(`/project/${id}/decision/${newDecisionId}`)}>
+          <button
+            style={buttonStyle}
+            onClick={() => navigate(`/project/${id}/decision/${newDecisionId}`)}
+          >
             View Decision
-          </Button>
-        </GlassCard>
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl animate-fade-in">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <GlassCard padding="lg">
-          <h2 className="text-[15px] font-semibold mb-4" style={{ color: "var(--text-primary)" }}>
+    <div style={{ maxWidth: 672 }}>
+      <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={glassCard}>
+          <h2 style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, color: t.textPrimary }}>
             Decision Details
           </h2>
 
-          <div className="space-y-4">
-            <Select
-              label="Decision Type"
-              options={DECISION_TYPES}
-              error={errors.decision_type?.message}
-              {...register("decision_type")}
-            />
-
-            <Input
-              label="Title"
-              placeholder="Brief, descriptive title"
-              error={errors.title?.message}
-              {...register("title")}
-            />
-
-            <TextArea
-              label="Description"
-              placeholder="Detailed description of the decision..."
-              error={errors.description?.message}
-              {...register("description")}
-            />
-
-            <TextArea
-              label="Justification"
-              placeholder="Why this decision is being made..."
-              error={errors.justification?.message}
-              {...register("justification")}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Cost Impact ($)"
-                type="number"
-                placeholder="0"
-                error={errors.cost_impact?.message}
-                {...register("cost_impact")}
-              />
-
-              <Select
-                label="Risk Level"
-                options={RISK_LEVELS}
-                error={errors.risk_level?.message}
-                {...register("risk_level")}
-              />
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Decision Type */}
+            <div>
+              <label style={{ ...overline, display: "block", marginBottom: 6 }}>Decision Type</label>
+              <select
+                {...register("decision_type")}
+                style={{ ...inputStyle, appearance: "auto" as const }}
+              >
+                <option value="">Select...</option>
+                {DECISION_TYPES.map((opt) => (
+                  <option key={typeof opt === "string" ? opt : opt.value} value={typeof opt === "string" ? opt : opt.value}>
+                    {typeof opt === "string" ? opt : opt.label}
+                  </option>
+                ))}
+              </select>
+              {errors.decision_type?.message && (
+                <p style={{ fontSize: 11, color: t.neonRed, marginTop: 4 }}>{errors.decision_type.message}</p>
+              )}
             </div>
 
-            <Input
-              label="Approved By"
-              placeholder="Name of approver"
-              error={errors.approved_by?.message}
-              {...register("approved_by")}
-            />
+            {/* Title */}
+            <div>
+              <label style={{ ...overline, display: "block", marginBottom: 6 }}>Title</label>
+              <input
+                {...register("title")}
+                placeholder="Brief, descriptive title"
+                style={inputStyle}
+              />
+              {errors.title?.message && (
+                <p style={{ fontSize: 11, color: t.neonRed, marginTop: 4 }}>{errors.title.message}</p>
+              )}
+            </div>
+
+            {/* Description */}
+            <div>
+              <label style={{ ...overline, display: "block", marginBottom: 6 }}>Description</label>
+              <textarea
+                {...register("description")}
+                placeholder="Detailed description of the decision..."
+                rows={4}
+                style={{ ...inputStyle, resize: "vertical" }}
+              />
+              {errors.description?.message && (
+                <p style={{ fontSize: 11, color: t.neonRed, marginTop: 4 }}>{errors.description.message}</p>
+              )}
+            </div>
+
+            {/* Justification */}
+            <div>
+              <label style={{ ...overline, display: "block", marginBottom: 6 }}>Justification</label>
+              <textarea
+                {...register("justification")}
+                placeholder="Why this decision is being made..."
+                rows={4}
+                style={{ ...inputStyle, resize: "vertical" }}
+              />
+              {errors.justification?.message && (
+                <p style={{ fontSize: 11, color: t.neonRed, marginTop: 4 }}>{errors.justification.message}</p>
+              )}
+            </div>
+
+            {/* Cost Impact + Risk Level */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div>
+                <label style={{ ...overline, display: "block", marginBottom: 6 }}>Cost Impact ($)</label>
+                <input
+                  type="number"
+                  {...register("cost_impact")}
+                  placeholder="0"
+                  style={inputStyle}
+                />
+                {errors.cost_impact?.message && (
+                  <p style={{ fontSize: 11, color: t.neonRed, marginTop: 4 }}>{errors.cost_impact.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label style={{ ...overline, display: "block", marginBottom: 6 }}>Risk Level</label>
+                <select
+                  {...register("risk_level")}
+                  style={{ ...inputStyle, appearance: "auto" as const }}
+                >
+                  <option value="">Select...</option>
+                  {RISK_LEVELS.map((opt) => (
+                    <option key={typeof opt === "string" ? opt : opt.value} value={typeof opt === "string" ? opt : opt.value}>
+                      {typeof opt === "string" ? opt : opt.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.risk_level?.message && (
+                  <p style={{ fontSize: 11, color: t.neonRed, marginTop: 4 }}>{errors.risk_level.message}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Approved By */}
+            <div>
+              <label style={{ ...overline, display: "block", marginBottom: 6 }}>Approved By</label>
+              <input
+                {...register("approved_by")}
+                placeholder="Name of approver"
+                style={inputStyle}
+              />
+              {errors.approved_by?.message && (
+                <p style={{ fontSize: 11, color: t.neonRed, marginTop: 4 }}>{errors.approved_by.message}</p>
+              )}
+            </div>
           </div>
-        </GlassCard>
+        </div>
 
         {error && (
-          <div className="text-neon-red text-[12px] bg-neon-red-dim px-4 py-2.5 rounded-xl">
+          <div
+            style={{
+              color: t.neonRed,
+              fontSize: 12,
+              background: t.neonRedDim,
+              padding: "10px 16px",
+              borderRadius: 12,
+            }}
+          >
             {error}
           </div>
         )}
 
-        <Button type="submit" size="lg" className="w-full">
+        <button type="submit" style={{ ...buttonStyle, width: "100%", padding: "14px 20px" }}>
           Record Decision
-        </Button>
+        </button>
       </form>
     </div>
   );
 }
 
 function StepIndicator({ phase }: { phase: SubmitPhase }) {
+  const t = useTheme();
+
   const steps = [
-    { key: "hashing", icon: Hash, label: "Computing hash..." },
-    { key: "chaining", icon: Link2, label: "Linking to chain..." },
-    { key: "anchoring", icon: Shield, label: "Anchoring on Polygon..." },
+    { key: "hashing", icon: "#", label: "Computing hash..." },
+    { key: "chaining", icon: "\u26D3", label: "Linking to chain..." },
+    { key: "anchoring", icon: "\uD83D\uDEE1", label: "Anchoring on Polygon..." },
   ];
 
   return (
-    <div className="space-y-3">
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {steps.map((step) => {
         const isActive = step.key === phase;
         const isPast = steps.findIndex((s) => s.key === phase) > steps.findIndex((s) => s.key === step.key);
@@ -198,20 +317,31 @@ function StepIndicator({ phase }: { phase: SubmitPhase }) {
         return (
           <div
             key={step.key}
-            className={`flex items-center gap-3 transition-opacity duration-300 ${
-              isActive ? "opacity-100" : isPast ? "opacity-40" : "opacity-20"
-            }`}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              opacity: isActive ? 1 : isPast ? 0.4 : 0.2,
+              transition: "opacity 300ms",
+            }}
           >
-            <step.icon
-              size={18}
-              className={isActive ? "text-accent animate-pulse-glow" : ""}
-              style={{ color: isPast ? "#00FF88" : isActive ? "#4A9EFF" : "var(--text-muted)" }}
-            />
             <span
-              className={`text-[13px] font-medium ${isActive ? "font-mono" : ""}`}
-              style={{ color: isActive ? "var(--text-primary)" : "var(--text-muted)" }}
+              style={{
+                fontSize: 18,
+                color: isPast ? t.neonGreen : isActive ? t.accent : t.textMuted,
+              }}
             >
-              {isPast ? step.label.replace("...", " ✓") : step.label}
+              {step.icon}
+            </span>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                fontFamily: isActive ? "monospace" : "inherit",
+                color: isActive ? t.textPrimary : t.textMuted,
+              }}
+            >
+              {isPast ? step.label.replace("...", " \u2713") : step.label}
             </span>
           </div>
         );

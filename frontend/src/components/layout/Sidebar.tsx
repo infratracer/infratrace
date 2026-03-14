@@ -1,167 +1,228 @@
-import { NavLink, useParams } from "react-router-dom";
-import {
-  LayoutDashboard,
-  GitBranch,
-  Radio,
-  Brain,
-  Link2,
-  PlusCircle,
-  List,
-  FileText,
-  Users,
-  ScrollText,
-  X,
-} from "lucide-react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { useProjectStore } from "../../store/projectStore";
+import { useTheme } from "../../hooks/useTheme";
 
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
+  isMobile: boolean;
 }
 
-export default function Sidebar({ open, onClose }: SidebarProps) {
+export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
+  const t = useTheme();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { id: paramId } = useParams();
   const user = useAuthStore((s) => s.user);
   const activeProject = useProjectStore((s) => s.activeProject());
   const projectId = paramId || useProjectStore((s) => s.activeProjectId);
 
-  const projectNav = [
-    { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-    { to: `/project/${projectId}/timeline`, icon: GitBranch, label: "Timeline" },
-    { to: `/project/${projectId}/sensors`, icon: Radio, label: "Sensors" },
-    { to: `/project/${projectId}/analysis`, icon: Brain, label: "AI Analysis" },
-    { to: `/project/${projectId}/verify`, icon: Link2, label: "Verify Chain" },
-    { to: `/project/${projectId}/log`, icon: PlusCircle, label: "Log Decision" },
-    { to: `/project/${projectId}/assumptions`, icon: List, label: "Assumptions" },
-    { to: `/project/${projectId}/reports`, icon: FileText, label: "Reports" },
+  const getPage = () => {
+    const p = location.pathname;
+    if (p === "/") return "dashboard";
+    if (p.includes("/timeline")) return "timeline";
+    if (p.includes("/sensors")) return "sensors";
+    if (p.includes("/analysis")) return "analysis";
+    if (p.includes("/verify")) return "verify";
+    if (p.includes("/log")) return "log";
+    if (p.includes("/assumptions")) return "assumptions";
+    if (p.includes("/reports")) return "reports";
+    if (p.includes("/admin/users")) return "users";
+    if (p.includes("/admin/audit")) return "audit";
+    return "dashboard";
+  };
+
+  const page = getPage();
+
+  const navItems = [
+    { id: "dashboard", label: "Dashboard", icon: "\u25A6", path: "/" },
+    { id: "timeline", label: "Timeline", icon: "\u2502", path: `/project/${projectId}/timeline` },
+    { id: "sensors", label: "Sensors", icon: "\u25C9", path: `/project/${projectId}/sensors`, badge: "2" },
+    { id: "analysis", label: "AI Analysis", icon: "\u25C7", path: `/project/${projectId}/analysis`, badge: "4" },
+    { id: "verify", label: "Verify Chain", icon: "\u26D3", path: `/project/${projectId}/verify` },
+    { id: "log", label: "Log Decision", icon: "+", path: `/project/${projectId}/log` },
+    { id: "assumptions", label: "Assumptions", icon: "\u2261", path: `/project/${projectId}/assumptions` },
+    { id: "reports", label: "Reports", icon: "\u25A2", path: `/project/${projectId}/reports` },
   ];
 
-  const adminNav = [
-    { to: "/admin/users", icon: Users, label: "Users" },
-    { to: "/admin/audit-log", icon: ScrollText, label: "Audit Log" },
+  const adminItems = [
+    { id: "users", label: "Users", icon: "\u2630", path: "/admin/users" },
+    { id: "audit", label: "Audit Log", icon: "\u2263", path: "/admin/audit-log" },
   ];
 
   const isAdmin = user?.role === "admin";
   const isAuditor = user?.role === "auditor";
 
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200 ${
-      isActive
-        ? "text-accent bg-accent-dim"
-        : "hover:bg-glass-border"
-    }`;
+  const handleNav = (path: string) => {
+    navigate(path);
+    if (isMobile) onClose();
+  };
 
   return (
     <>
-      {/* Mobile overlay */}
-      {open && (
+      {isMobile && open && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
-          style={{ backdropFilter: "blur(20px)" }}
           onClick={onClose}
+          style={{
+            position: "fixed", inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            zIndex: 40,
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
         />
       )}
 
-      <aside
-        className={`fixed top-0 left-0 z-50 h-full w-[220px] flex flex-col border-r border-glass-border transition-transform duration-300 md:translate-x-0 ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
-        style={{ backgroundColor: "var(--bg-sidebar)" }}
-      >
+      <div style={{
+        width: open ? 240 : 0,
+        minWidth: open ? 240 : 0,
+        background: t.bgSidebar,
+        backgroundImage: t.mode === "dark" ? "linear-gradient(180deg, rgba(15, 25, 55, 0.3) 0%, transparent 100%)" : "none",
+        borderRight: `1px solid ${t.divider}`,
+        display: "flex",
+        flexDirection: "column",
+        transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+        overflow: "hidden",
+        position: isMobile ? "fixed" : "relative",
+        left: 0, top: 0, bottom: 0,
+        zIndex: 50,
+        boxShadow: isMobile && open ? `8px 0 32px rgba(0,0,0,0.4)` : "none",
+      }}>
         {/* Logo */}
-        <div className="flex items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-white font-bold text-[12px]">
-              IT
-            </div>
+        <div style={{
+          padding: "22px 18px 18px",
+          borderBottom: `1px solid ${t.divider}`,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{
+              width: 34, height: 34, borderRadius: 10,
+              background: `linear-gradient(135deg, ${t.accent}, ${t.teal})`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 13, fontWeight: 700, color: "#FFF",
+              boxShadow: `0 4px 12px ${t.accent}25`,
+            }}>IT</div>
             <div>
-              <div className="text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>
-                InfraTrace
-              </div>
-              <div className="text-[9px] font-medium uppercase tracking-widest" style={{ color: "var(--text-muted)" }}>
-                Audit Platform
-              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: t.textPrimary, whiteSpace: "nowrap", letterSpacing: "-0.2px" }}>InfraTrace</div>
+              <div style={{ fontSize: 8, color: t.textMuted, letterSpacing: "0.12em", textTransform: "uppercase", whiteSpace: "nowrap", fontWeight: 600 }}>Audit Platform</div>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="md:hidden p-1 rounded cursor-pointer"
-            style={{ color: "var(--text-muted)" }}
-          >
-            <X size={16} />
-          </button>
+          {isMobile && (
+            <button onClick={onClose} style={{ background: "none", border: "none", color: t.textMuted, fontSize: 18, cursor: "pointer", padding: 4 }}>{"\u2715"}</button>
+          )}
         </div>
 
-        {/* Active project indicator */}
-        {activeProject && (
-          <div className="mx-3 mb-2 px-3 py-2 rounded-lg" style={{ backgroundColor: "var(--bg-card)" }}>
-            <div className="text-[9px] uppercase tracking-widest font-semibold" style={{ color: "var(--text-muted)" }}>
-              Active Project
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[12px] font-medium truncate" style={{ color: "var(--text-primary)" }}>
-                {activeProject.name}
-              </span>
-              <span className="w-2 h-2 rounded-full bg-neon-green neon-glow-green" />
-            </div>
+        {/* Project selector */}
+        <div style={{ padding: "14px 16px", borderBottom: `1px solid ${t.divider}` }}>
+          <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.12em", color: t.textMuted, marginBottom: 8, fontWeight: 600 }}>Active Project</div>
+          <div style={{
+            padding: "10px 12px",
+            background: t.bgCard,
+            backdropFilter: "blur(20px)",
+            borderRadius: 10,
+            border: `1px solid ${t.glassBorder}`,
+            fontSize: 12, color: t.textPrimary, fontWeight: 500, whiteSpace: "nowrap",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            cursor: "pointer",
+            transition: "border-color 0.2s",
+          }}>
+            <span>{activeProject?.name || "Select project"}</span>
+            {activeProject && <span style={{ fontSize: 8, color: t.neonGreen, textShadow: `0 0 6px ${t.neonGreen}60` }}>{"\u25CF"}</span>}
           </div>
-        )}
+        </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 px-3 py-2 space-y-0.5 overflow-y-auto">
-          {projectNav.map(({ to, icon: Icon, label }) => (
-            <NavLink key={to} to={to} className={linkClass} onClick={onClose} style={{ color: "var(--text-secondary)" }}>
-              <Icon size={16} />
-              {label}
-            </NavLink>
-          ))}
+        {/* Nav */}
+        <div style={{ padding: "10px 12px", flex: 1, overflowY: "auto" }}>
+          {navItems.map(n => {
+            const isActive = page === n.id;
+            return (
+              <button key={n.id} onClick={() => handleNav(n.path)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10, width: "100%",
+                  padding: "10px 12px", marginBottom: 2, border: "none", borderRadius: 10,
+                  cursor: "pointer", fontSize: 12.5, fontWeight: isActive ? 600 : 500, textAlign: "left",
+                  whiteSpace: "nowrap",
+                  background: isActive ? t.sidebarActive : "transparent",
+                  color: isActive ? t.textPrimary : t.textSecondary,
+                  transition: "all 0.2s ease",
+                  position: "relative",
+                  fontFamily: "inherit",
+                }}>
+                {isActive && (
+                  <div style={{
+                    position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
+                    width: 3, height: 16, borderRadius: 2,
+                    background: t.accent,
+                    boxShadow: `0 0 8px ${t.accent}60`,
+                  }} />
+                )}
+                <span style={{ fontSize: 14, width: 20, textAlign: "center", color: isActive ? t.accent : t.textMuted }}>{n.icon}</span>
+                {n.label}
+                {n.badge && (
+                  <span style={{
+                    marginLeft: "auto", fontSize: 8, padding: "2px 6px", borderRadius: 5,
+                    background: n.id === "sensors" ? t.neonAmberDim : t.neonRedDim,
+                    color: n.id === "sensors" ? t.neonAmber : t.neonRed,
+                    fontWeight: 700,
+                  }}>{n.badge}</span>
+                )}
+              </button>
+            );
+          })}
 
           {(isAdmin || isAuditor) && (
             <>
-              <div
-                className="mt-4 mb-2 px-3 text-[9px] uppercase tracking-widest font-semibold"
-                style={{ color: "var(--text-muted)" }}
-              >
-                Admin
-              </div>
-              {adminNav.map(({ to, icon: Icon, label }) => (
-                <NavLink key={to} to={to} className={linkClass} onClick={onClose} style={{ color: "var(--text-secondary)" }}>
-                  <Icon size={16} />
-                  {label}
-                </NavLink>
-              ))}
+              <div style={{
+                fontSize: 9, textTransform: "uppercase", letterSpacing: "0.12em",
+                color: t.textMuted, margin: "20px 12px 8px", fontWeight: 600,
+              }}>Admin</div>
+              {adminItems.map(n => {
+                const isActive = page === n.id;
+                return (
+                  <button key={n.id} onClick={() => handleNav(n.path)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10, width: "100%",
+                      padding: "10px 12px", marginBottom: 2, border: "none", borderRadius: 10,
+                      cursor: "pointer", fontSize: 12.5, fontWeight: isActive ? 600 : 500, textAlign: "left",
+                      whiteSpace: "nowrap",
+                      background: isActive ? t.sidebarActive : "transparent",
+                      color: isActive ? t.textPrimary : t.textSecondary,
+                      transition: "all 0.2s ease",
+                      fontFamily: "inherit",
+                    }}>
+                    <span style={{ fontSize: 14, width: 20, textAlign: "center", color: isActive ? t.accent : t.textMuted }}>{n.icon}</span>
+                    {n.label}
+                  </button>
+                );
+              })}
             </>
           )}
-        </nav>
+        </div>
 
-        {/* User info */}
+        {/* User */}
         {user && (
-          <div className="px-4 py-3 border-t border-glass-border">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold"
-                style={{ backgroundColor: "var(--bg-card)", color: "var(--text-primary)" }}
-              >
-                {user.full_name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .slice(0, 2)
-                  .toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <div className="text-[12px] font-medium truncate" style={{ color: "var(--text-primary)" }}>
-                  {user.full_name}
-                </div>
-                <div className="text-[10px] capitalize" style={{ color: "var(--text-muted)" }}>
-                  {user.role.replace("_", " ")}
-                </div>
-              </div>
+          <div style={{
+            padding: "16px 16px",
+            borderTop: `1px solid ${t.divider}`,
+            display: "flex", alignItems: "center", gap: 10,
+          }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: "50%",
+              background: `linear-gradient(135deg, ${t.accentDim}, ${t.tealDim})`,
+              border: `1px solid ${t.glassBorder}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 11, fontWeight: 600, color: t.accent,
+            }}>
+              {user.full_name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+            </div>
+            <div style={{ whiteSpace: "nowrap" }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: t.textPrimary }}>{user.full_name}</div>
+              <div style={{ fontSize: 9, color: t.textMuted, fontWeight: 500 }}>{user.role.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}</div>
             </div>
           </div>
         )}
-      </aside>
+      </div>
     </>
   );
 }

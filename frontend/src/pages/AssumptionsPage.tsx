@@ -1,22 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getAssumptions, createAssumption, updateAssumption } from "../api/assumptions";
-import GlassCard from "../components/ui/GlassCard";
-import Badge from "../components/ui/Badge";
-import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
-import TextArea from "../components/ui/TextArea";
-import Select from "../components/ui/Select";
-import Spinner from "../components/ui/Spinner";
-import ThresholdBar from "../components/ui/ThresholdBar";
-import EmptyState from "../components/ui/EmptyState";
+import { useTheme } from "../hooks/useTheme";
 import { SENSOR_CONFIG } from "../utils/constants";
 import { formatDate } from "../utils/format";
-import { List, Plus, X } from "lucide-react";
 import type { Assumption, SensorType } from "../types";
 
 export default function AssumptionsPage() {
   const { id } = useParams<{ id: string }>();
+  const t = useTheme();
   const [assumptions, setAssumptions] = useState<Assumption[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -66,8 +58,17 @@ export default function AssumptionsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size={32} className="text-accent" />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 256 }}>
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            border: `3px solid ${t.glassBorder}`,
+            borderTop: `3px solid ${t.accent}`,
+            borderRadius: "50%",
+            animation: "spin 1s linear infinite",
+          }}
+        />
       </div>
     );
   }
@@ -77,107 +78,225 @@ export default function AssumptionsPage() {
     label: cfg.label,
   }));
 
-  const statusBadge = (status: string) => {
-    if (status === "validated") return "chain-verified";
-    if (status === "invalidated") return "chain-failed";
-    return "chain-pending";
+  const statusBadgeStyle = (status: string): React.CSSProperties => {
+    let bg: string;
+    let color: string;
+    if (status === "validated") {
+      bg = t.neonGreenDim;
+      color = t.neonGreen;
+    } else if (status === "invalidated") {
+      bg = t.neonRedDim;
+      color = t.neonRed;
+    } else {
+      bg = t.neonAmberDim;
+      color = t.neonAmber;
+    }
+    return {
+      display: "inline-block",
+      padding: "2px 8px",
+      borderRadius: 6,
+      fontSize: 11,
+      fontWeight: 600,
+      background: bg,
+      color,
+    };
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "10px 14px",
+    background: t.bgInput,
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 10,
+    color: t.textPrimary,
+    fontSize: 13,
+    outline: "none",
+    boxSizing: "border-box" as const,
+    fontFamily: "inherit",
+  };
+
+  const selectStyle: React.CSSProperties = { ...inputStyle };
+
+  const buttonStyle: React.CSSProperties = {
+    padding: "10px 20px",
+    background: t.accent,
+    border: "none",
+    borderRadius: 10,
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    boxShadow: t.btnShadow,
+  };
+
+  const buttonSmStyle: React.CSSProperties = {
+    padding: "6px 12px",
+    background: t.accent,
+    border: "none",
+    borderRadius: 8,
+    color: "#FFF",
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  };
+
+  const ghostBtnStyle: React.CSSProperties = {
+    padding: "6px 12px",
+    background: "transparent",
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 8,
+    color: t.textSecondary,
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  };
+
+  const glassCard: React.CSSProperties = {
+    background: t.bgCard,
+    backdropFilter: "blur(40px) saturate(180%)",
+    WebkitBackdropFilter: "blur(40px) saturate(180%)",
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 18,
+    boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
+    padding: "20px",
+  };
+
+  const overlineLabel: React.CSSProperties = {
+    fontSize: 9,
+    fontWeight: 600,
+    letterSpacing: "0.12em",
+    textTransform: "uppercase" as const,
+    color: t.textMuted,
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <span className="text-[13px] font-medium" style={{ color: "var(--text-secondary)" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: t.textSecondary }}>
           {assumptions.length} assumption{assumptions.length !== 1 ? "s" : ""}
         </span>
-        <Button size="sm" onClick={() => setShowForm(!showForm)}>
-          {showForm ? <X size={14} /> : <Plus size={14} />}
-          {showForm ? "Cancel" : "Add Assumption"}
-        </Button>
+        <button style={buttonSmStyle} onClick={() => setShowForm(!showForm)}>
+          {showForm ? "\u2715 Cancel" : "\u002B Add Assumption"}
+        </button>
       </div>
 
       {showForm && (
-        <GlassCard padding="md">
-          <div className="space-y-3">
-            <Input
-              label="Category"
-              value={formData.category}
-              onChange={(e) => setFormData((d) => ({ ...d, category: e.target.value }))}
-              placeholder="e.g., Material Cost, Weather, Labour"
-            />
-            <TextArea
-              label="Description"
-              value={formData.description}
-              onChange={(e) => setFormData((d) => ({ ...d, description: e.target.value }))}
-              placeholder="Describe the assumption..."
-            />
-            <div className="grid grid-cols-3 gap-3">
-              <Select
-                label="Sensor Type"
-                options={sensorOptions}
-                value={formData.sensor_type}
-                onChange={(e) => setFormData((d) => ({ ...d, sensor_type: e.target.value }))}
-              />
-              <Input
-                label="Threshold"
-                type="number"
-                value={formData.threshold_value}
-                onChange={(e) => setFormData((d) => ({ ...d, threshold_value: e.target.value }))}
-              />
-              <Input
-                label="Unit"
-                value={formData.threshold_unit}
-                onChange={(e) => setFormData((d) => ({ ...d, threshold_unit: e.target.value }))}
-                placeholder={formData.sensor_type ? SENSOR_CONFIG[formData.sensor_type as SensorType]?.unit : ""}
+        <div style={glassCard}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div>
+              <label style={overlineLabel}>Category</label>
+              <input
+                style={inputStyle}
+                value={formData.category}
+                onChange={(e) => setFormData((d) => ({ ...d, category: e.target.value }))}
+                placeholder="e.g., Material Cost, Weather, Labour"
               />
             </div>
-            <Button onClick={handleCreate}>Save Assumption</Button>
+            <div>
+              <label style={overlineLabel}>Description</label>
+              <textarea
+                style={{ ...inputStyle, minHeight: 80, resize: "vertical" as const }}
+                value={formData.description}
+                onChange={(e) => setFormData((d) => ({ ...d, description: e.target.value }))}
+                placeholder="Describe the assumption..."
+              />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={overlineLabel}>Sensor Type</label>
+                <select
+                  style={selectStyle}
+                  value={formData.sensor_type}
+                  onChange={(e) => setFormData((d) => ({ ...d, sensor_type: e.target.value }))}
+                >
+                  <option value="">Select...</option>
+                  {sensorOptions.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={overlineLabel}>Threshold</label>
+                <input
+                  style={inputStyle}
+                  type="number"
+                  value={formData.threshold_value}
+                  onChange={(e) => setFormData((d) => ({ ...d, threshold_value: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label style={overlineLabel}>Unit</label>
+                <input
+                  style={inputStyle}
+                  value={formData.threshold_unit}
+                  onChange={(e) => setFormData((d) => ({ ...d, threshold_unit: e.target.value }))}
+                  placeholder={formData.sensor_type ? SENSOR_CONFIG[formData.sensor_type as SensorType]?.unit : ""}
+                />
+              </div>
+            </div>
+            <button style={buttonStyle} onClick={handleCreate}>Save Assumption</button>
           </div>
-        </GlassCard>
+        </div>
       )}
 
       {assumptions.length === 0 ? (
-        <EmptyState icon={List} title="No assumptions" description="Add assumptions to monitor with IoT sensors." />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40, color: t.textMuted }}>
+          <span style={{ fontSize: 32, marginBottom: 12 }}>{"\u2630"}</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: t.textSecondary, marginBottom: 4 }}>No assumptions</span>
+          <span style={{ fontSize: 12, color: t.textMuted }}>Add assumptions to monitor with IoT sensors.</span>
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {assumptions.map((a) => (
-            <GlassCard key={a.id} padding="md">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Badge variant={statusBadge(a.status) as any}>{a.status}</Badge>
-                    <span className="text-[11px] font-medium" style={{ color: "var(--text-muted)" }}>
+            <div key={a.id} style={glassCard}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <span style={statusBadgeStyle(a.status)}>{a.status}</span>
+                    <span style={{ fontSize: 11, fontWeight: 500, color: t.textMuted }}>
                       {a.category}
                     </span>
                   </div>
-                  <p className="text-[13px]" style={{ color: "var(--text-primary)" }}>
+                  <p style={{ fontSize: 13, color: t.textPrimary, margin: 0 }}>
                     {a.description}
                   </p>
                   {a.sensor_type && a.threshold_value && (
-                    <div className="mt-2 flex items-center gap-3">
-                      <span className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+                    <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 12 }}>
+                      <span style={{ fontSize: 11, color: t.textSecondary }}>
                         {SENSOR_CONFIG[a.sensor_type]?.label}: ≤ {a.threshold_value} {a.threshold_unit}
                       </span>
-                      <div className="w-32">
-                        <ThresholdBar value={SENSOR_CONFIG[a.sensor_type]?.base ?? 0} threshold={a.threshold_value} />
+                      <div style={{ width: 128, height: 6, background: t.bgInput, borderRadius: 3, overflow: "hidden" }}>
+                        <div
+                          style={{
+                            height: "100%",
+                            width: `${Math.min(100, ((SENSOR_CONFIG[a.sensor_type]?.base ?? 0) / a.threshold_value) * 100)}%`,
+                            background: (SENSOR_CONFIG[a.sensor_type]?.base ?? 0) > a.threshold_value ? t.neonRed : t.neonGreen,
+                            borderRadius: 3,
+                            transition: "width 0.3s ease",
+                          }}
+                        />
                       </div>
                     </div>
                   )}
-                  <p className="text-[10px] mt-2" style={{ color: "var(--text-muted)" }}>
+                  <p style={{ fontSize: 10, marginTop: 8, marginBottom: 0, color: t.textMuted }}>
                     Created {formatDate(a.created_at)}
                   </p>
                 </div>
                 {a.status === "active" && (
-                  <div className="flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => handleStatusChange(a, "validated")}>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button style={ghostBtnStyle} onClick={() => handleStatusChange(a, "validated")}>
                       Validate
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => handleStatusChange(a, "invalidated")}>
+                    </button>
+                    <button style={ghostBtnStyle} onClick={() => handleStatusChange(a, "invalidated")}>
                       Invalidate
-                    </Button>
+                    </button>
                   </div>
                 )}
               </div>
-            </GlassCard>
+            </div>
           ))}
         </div>
       )}

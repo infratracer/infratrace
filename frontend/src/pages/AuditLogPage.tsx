@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { getAuditLog } from "../api/admin";
-import GlassCard from "../components/ui/GlassCard";
-import Spinner from "../components/ui/Spinner";
+import { useTheme } from "../hooks/useTheme";
 import { formatDateTime } from "../utils/format";
-import { ScrollText } from "lucide-react";
-import EmptyState from "../components/ui/EmptyState";
 import type { AuditLogEntry } from "../types";
 
 export default function AuditLogPage() {
+  const t = useTheme();
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -25,75 +23,115 @@ export default function AuditLogPage() {
     })();
   }, [page]);
 
+  const glassCard: React.CSSProperties = {
+    background: t.bgCard,
+    backdropFilter: "blur(40px) saturate(180%)",
+    WebkitBackdropFilter: "blur(40px) saturate(180%)",
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 18,
+    boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
+    padding: "20px",
+  };
+
+  const thStyle: React.CSSProperties = {
+    textAlign: "left" as const,
+    padding: "8px 12px",
+    fontSize: 10,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.08em",
+    fontWeight: 600,
+    color: t.textMuted,
+  };
+
+  const tdStyle: React.CSSProperties = {
+    padding: "8px 12px",
+  };
+
+  const pageBtnStyle = (disabled: boolean): React.CSSProperties => ({
+    padding: "6px 12px",
+    borderRadius: 8,
+    fontSize: 11,
+    fontWeight: 500,
+    border: `1px solid ${t.glassBorder}`,
+    background: "transparent",
+    color: t.textSecondary,
+    cursor: disabled ? "default" : "pointer",
+    opacity: disabled ? 0.3 : 1,
+    fontFamily: "inherit",
+  });
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size={32} className="text-accent" />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 256 }}>
+        <div style={{ width: 32, height: 32, border: `3px solid ${t.glassBorder}`, borderTopColor: t.accent, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       </div>
     );
   }
 
   if (logs.length === 0) {
-    return <EmptyState icon={ScrollText} title="No audit log entries" />;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 48, color: t.textMuted }}>
+        <span style={{ fontSize: 32, marginBottom: 8 }}>{"\u{1F4DC}"}</span>
+        <span style={{ fontSize: 13, fontWeight: 500 }}>No audit log entries</span>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      <GlassCard padding="sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ ...glassCard, padding: "12px" }}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ color: "var(--text-muted)" }}>
-                <th className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-semibold">Time</th>
-                <th className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-semibold">Action</th>
-                <th className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-semibold">Resource</th>
-                <th className="text-left py-2 px-3 text-[10px] uppercase tracking-wider font-semibold hidden md:table-cell">IP</th>
+              <tr>
+                <th style={thStyle}>Time</th>
+                <th style={thStyle}>Action</th>
+                <th style={thStyle}>Resource</th>
+                <th style={thStyle}>IP</th>
               </tr>
             </thead>
-            <tbody className="divide-y" style={{ borderColor: "var(--color-divider)" }}>
-              {logs.map((log) => (
-                <tr key={log.id}>
-                  <td className="py-2 px-3 font-mono" style={{ color: "var(--text-muted)" }}>
+            <tbody>
+              {logs.map((log, idx) => (
+                <tr key={log.id} style={{ borderTop: idx > 0 ? `1px solid ${t.divider}` : "none" }}>
+                  <td style={{ ...tdStyle, fontFamily: "monospace", color: t.textMuted }}>
                     {formatDateTime(log.created_at)}
                   </td>
-                  <td className="py-2 px-3" style={{ color: "var(--text-primary)" }}>
+                  <td style={{ ...tdStyle, color: t.textPrimary }}>
                     {log.action}
                   </td>
-                  <td className="py-2 px-3" style={{ color: "var(--text-secondary)" }}>
+                  <td style={{ ...tdStyle, color: t.textSecondary }}>
                     {log.resource_type}
                     {log.resource_id && (
-                      <span className="font-mono text-[10px] ml-1" style={{ color: "var(--text-muted)" }}>
+                      <span style={{ fontFamily: "monospace", fontSize: 10, marginLeft: 4, color: t.textMuted }}>
                         {log.resource_id.slice(0, 8)}
                       </span>
                     )}
                   </td>
-                  <td className="py-2 px-3 font-mono hidden md:table-cell" style={{ color: "var(--text-muted)" }}>
-                    {log.ip_address || "—"}
+                  <td style={{ ...tdStyle, fontFamily: "monospace", color: t.textMuted }}>
+                    {log.ip_address || "\u2014"}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </GlassCard>
+      </div>
 
-      <div className="flex justify-center gap-2">
+      <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
         <button
           disabled={page <= 1}
           onClick={() => setPage((p) => p - 1)}
-          className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-glass-border disabled:opacity-30 cursor-pointer"
-          style={{ color: "var(--text-secondary)" }}
+          style={pageBtnStyle(page <= 1)}
         >
           Previous
         </button>
-        <span className="px-3 py-1.5 text-[11px]" style={{ color: "var(--text-muted)" }}>
+        <span style={{ padding: "6px 12px", fontSize: 11, color: t.textMuted }}>
           Page {page}
         </span>
         <button
           disabled={logs.length < 50}
           onClick={() => setPage((p) => p + 1)}
-          className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-glass-border disabled:opacity-30 cursor-pointer"
-          style={{ color: "var(--text-secondary)" }}
+          style={pageBtnStyle(logs.length < 50)}
         >
           Next
         </button>

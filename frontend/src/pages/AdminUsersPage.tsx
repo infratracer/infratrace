@@ -1,14 +1,7 @@
 import { useEffect, useState } from "react";
 import { getUsers, createUser, updateUser } from "../api/admin";
-import GlassCard from "../components/ui/GlassCard";
-import Badge from "../components/ui/Badge";
-import Button from "../components/ui/Button";
-import Input from "../components/ui/Input";
-import Select from "../components/ui/Select";
-import Spinner from "../components/ui/Spinner";
+import { useTheme } from "../hooks/useTheme";
 import { formatDate } from "../utils/format";
-import { UserPlus, X, Users } from "lucide-react";
-import EmptyState from "../components/ui/EmptyState";
 import type { User } from "../types";
 
 const ROLE_OPTIONS = [
@@ -19,6 +12,7 @@ const ROLE_OPTIONS = [
 ];
 
 export default function AdminUsersPage() {
+  const t = useTheme();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -57,76 +51,224 @@ export default function AdminUsersPage() {
     }
   };
 
+  const glassCard: React.CSSProperties = {
+    background: t.bgCard,
+    backdropFilter: "blur(40px) saturate(180%)",
+    WebkitBackdropFilter: "blur(40px) saturate(180%)",
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 18,
+    boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
+    padding: "20px",
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "10px 14px",
+    background: t.bgInput,
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 10,
+    color: t.textPrimary,
+    fontSize: 13,
+    outline: "none",
+    boxSizing: "border-box" as const,
+    fontFamily: "inherit",
+  };
+
+  const selectStyle: React.CSSProperties = {
+    ...inputStyle,
+    appearance: "none" as const,
+  };
+
+  const buttonStyle: React.CSSProperties = {
+    padding: "10px 20px",
+    background: t.accent,
+    border: "none",
+    borderRadius: 10,
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    boxShadow: t.btnShadow,
+  };
+
+  const buttonSmStyle: React.CSSProperties = {
+    padding: "6px 14px",
+    background: t.accent,
+    border: "none",
+    borderRadius: 10,
+    color: "#FFF",
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  };
+
+  const ghostButtonStyle: React.CSSProperties = {
+    padding: "6px 14px",
+    background: "transparent",
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 10,
+    color: t.textSecondary,
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  };
+
+  const overline: React.CSSProperties = {
+    fontSize: 9,
+    fontWeight: 600,
+    letterSpacing: "0.12em",
+    textTransform: "uppercase" as const,
+    color: t.textMuted,
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size={32} className="text-accent" />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 256 }}>
+        <div style={{ width: 32, height: 32, border: `3px solid ${t.glassBorder}`, borderTopColor: t.accent, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <span className="text-[13px] font-medium" style={{ color: "var(--text-secondary)" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: 13, fontWeight: 500, color: t.textSecondary }}>
           {users.length} user{users.length !== 1 ? "s" : ""}
         </span>
-        <Button size="sm" onClick={() => setShowForm(!showForm)}>
-          {showForm ? <X size={14} /> : <UserPlus size={14} />}
-          {showForm ? "Cancel" : "Add User"}
-        </Button>
+        <button style={buttonSmStyle} onClick={() => setShowForm(!showForm)}>
+          {showForm ? "\u2715 Cancel" : "\u002B Add User"}
+        </button>
       </div>
 
       {showForm && (
-        <GlassCard padding="md">
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <Input label="Full Name" value={form.full_name} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} />
-              <Input label="Email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
+        <div style={{ ...glassCard, padding: "16px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={overline}>Full Name</label>
+                <input
+                  style={inputStyle}
+                  value={form.full_name}
+                  onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label style={overline}>Email</label>
+                <input
+                  style={inputStyle}
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
-              <Input label="Password" type="password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
-              <Select label="Role" options={ROLE_OPTIONS} value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} />
-              <Input label="Organisation" value={form.organisation} onChange={(e) => setForm((f) => ({ ...f, organisation: e.target.value }))} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={overline}>Password</label>
+                <input
+                  style={inputStyle}
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label style={overline}>Role</label>
+                <select
+                  style={selectStyle}
+                  value={form.role}
+                  onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+                >
+                  {ROLE_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={overline}>Organisation</label>
+                <input
+                  style={inputStyle}
+                  value={form.organisation}
+                  onChange={(e) => setForm((f) => ({ ...f, organisation: e.target.value }))}
+                />
+              </div>
             </div>
-            <Button onClick={handleCreate}>Create User</Button>
+            <button style={buttonStyle} onClick={handleCreate}>Create User</button>
           </div>
-        </GlassCard>
+        </div>
       )}
 
       {users.length === 0 ? (
-        <EmptyState icon={Users} title="No users" />
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 48, color: t.textMuted }}>
+          <span style={{ fontSize: 32, marginBottom: 8 }}>{"\u{1F465}"}</span>
+          <span style={{ fontSize: 13, fontWeight: 500 }}>No users</span>
+        </div>
       ) : (
-        <div className="space-y-2">
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {users.map((u) => (
-            <GlassCard key={u.id} padding="sm">
-              <div className="flex items-center gap-4">
+            <div key={u.id} style={{ ...glassCard, padding: "10px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-semibold shrink-0"
-                  style={{ backgroundColor: "var(--bg-card)", color: "var(--text-primary)", border: "1px solid var(--color-glass-border)" }}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    flexShrink: 0,
+                    backgroundColor: t.bgCard,
+                    color: t.textPrimary,
+                    border: `1px solid ${t.glassBorder}`,
+                  }}
                 >
                   {u.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium truncate" style={{ color: "var(--text-primary)" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: t.textPrimary, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {u.full_name}
                   </p>
-                  <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                  <p style={{ fontSize: 11, color: t.textMuted, margin: 0 }}>
                     {u.email}
                   </p>
                 </div>
-                <Badge variant={u.is_active ? "risk-low" : "risk-high"}>
+                <span
+                  style={{
+                    padding: "3px 10px",
+                    borderRadius: 8,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    background: u.is_active ? t.neonGreenDim : t.neonRedDim,
+                    color: u.is_active ? t.neonGreen : t.neonRed,
+                  }}
+                >
                   {u.is_active ? "Active" : "Inactive"}
-                </Badge>
-                <Badge variant="default">{u.role.replace("_", " ")}</Badge>
-                <span className="text-[10px] hidden md:block" style={{ color: "var(--text-muted)" }}>
+                </span>
+                <span
+                  style={{
+                    padding: "3px 10px",
+                    borderRadius: 8,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    background: t.bgElevated,
+                    color: t.textSecondary,
+                  }}
+                >
+                  {u.role.replace("_", " ")}
+                </span>
+                <span style={{ fontSize: 10, color: t.textMuted }}>
                   {formatDate(u.created_at)}
                 </span>
-                <Button size="sm" variant="ghost" onClick={() => handleToggleActive(u)}>
+                <button style={ghostButtonStyle} onClick={() => handleToggleActive(u)}>
                   {u.is_active ? "Deactivate" : "Activate"}
-                </Button>
+                </button>
               </div>
-            </GlassCard>
+            </div>
           ))}
         </div>
       )}

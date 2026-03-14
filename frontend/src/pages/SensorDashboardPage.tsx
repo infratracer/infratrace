@@ -3,14 +3,10 @@ import { useParams } from "react-router-dom";
 import { getSensorReadings, getLatestReadings } from "../api/sensors";
 import { useSensorSocket } from "../hooks/useSensorSocket";
 import { useSensorStore } from "../store/sensorStore";
-import GlassCard from "../components/ui/GlassCard";
-import Badge from "../components/ui/Badge";
-import ThresholdBar from "../components/ui/ThresholdBar";
-import Spinner from "../components/ui/Spinner";
 import { SENSOR_CONFIG } from "../utils/constants";
 import type { SensorReading, SensorType } from "../types";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
-import { Radio } from "lucide-react";
+import { useTheme } from "../hooks/useTheme";
 
 export default function SensorDashboardPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +15,7 @@ export default function SensorDashboardPage() {
   const [selectedType, setSelectedType] = useState<SensorType>("steel_price");
   const latest = useSensorStore((s) => s.latest);
   const updateReading = useSensorStore((s) => s.updateReading);
+  const t = useTheme();
 
   useSensorSocket(id, updateReading);
 
@@ -39,10 +36,38 @@ export default function SensorDashboardPage() {
     })();
   }, [id, selectedType]);
 
+  const glassCard = {
+    background: t.bgCard,
+    backdropFilter: "blur(40px) saturate(180%)",
+    WebkitBackdropFilter: "blur(40px) saturate(180%)",
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 18,
+    boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
+    padding: "20px",
+  };
+
+  const overline = {
+    fontSize: 9,
+    fontWeight: 600,
+    letterSpacing: "0.12em",
+    textTransform: "uppercase" as const,
+    color: t.textMuted,
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size={32} className="text-accent" />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 256 }}>
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            border: `3px solid ${t.accent}`,
+            borderTopColor: "transparent",
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+          }}
+        />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -57,20 +82,36 @@ export default function SensorDashboardPage() {
   }));
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* Live status bar */}
-      <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-glass-border" style={{ backgroundColor: "var(--bg-card)" }}>
-        <Radio size={14} className="text-neon-green animate-pulse-glow" />
-        <span className="text-[11px] font-medium" style={{ color: "var(--text-secondary)" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "8px 12px",
+          borderRadius: 12,
+          border: `1px solid ${t.glassBorder}`,
+          background: t.bgCard,
+        }}
+      >
+        <span style={{ fontSize: 14, color: t.neonGreen }}>{"📡"}</span>
+        <span style={{ fontSize: 11, fontWeight: 500, color: t.textSecondary }}>
           Live Sensor Feed
         </span>
-        <span className="text-[10px] ml-auto" style={{ color: "var(--text-muted)" }}>
+        <span style={{ fontSize: 10, marginLeft: "auto", color: t.textMuted }}>
           WebSocket connected
         </span>
       </div>
 
       {/* Sensor grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+          gap: 12,
+        }}
+      >
         {types.map((type) => {
           const cfg = SENSOR_CONFIG[type];
           const reading = latest[type];
@@ -79,83 +120,131 @@ export default function SensorDashboardPage() {
           const isAnomaly = reading?.anomaly ?? false;
           const isSelected = type === selectedType;
 
+          const pct = Math.min((value / threshold) * 100, 100);
+
           return (
-            <GlassCard
+            <div
               key={type}
-              hover
               onClick={() => setSelectedType(type)}
-              padding="sm"
-              glow={isAnomaly ? "red" : isSelected ? "accent" : undefined}
-              className={`cursor-pointer ${isSelected ? "border-accent/40" : ""} ${isAnomaly ? "border-neon-red/30" : ""}`}
+              style={{
+                ...glassCard,
+                padding: 14,
+                cursor: "pointer",
+                borderColor: isAnomaly
+                  ? t.neonRedDim
+                  : isSelected
+                  ? t.accent
+                  : t.glassBorder,
+                boxShadow: isAnomaly
+                  ? `0 0 12px ${t.neonRedDim}`
+                  : isSelected
+                  ? `0 0 12px ${t.accentDim}`
+                  : `${t.glassShadow}, ${t.glassInnerGlow}`,
+                transition: "border-color 200ms, box-shadow 200ms",
+              }}
             >
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-[9px] uppercase tracking-widest font-semibold" style={{ color: "var(--text-muted)" }}>
-                  {cfg.label}
-                </p>
-                {isAnomaly && <Badge variant="sensor-anomaly">!</Badge>}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                <p style={overline}>{cfg.label}</p>
+                {isAnomaly && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: t.neonRed,
+                      background: t.neonRedDim,
+                      padding: "1px 6px",
+                      borderRadius: 6,
+                    }}
+                  >
+                    !
+                  </span>
+                )}
               </div>
               <p
-                className="text-[20px] font-bold mb-0.5"
-                style={{ color: isAnomaly ? "#FF3366" : "var(--text-primary)" }}
+                style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  marginBottom: 2,
+                  color: isAnomaly ? t.neonRed : t.textPrimary,
+                }}
               >
                 {value.toFixed(1)}
               </p>
-              <p className="text-[10px] mb-2" style={{ color: "var(--text-muted)" }}>
+              <p style={{ fontSize: 10, marginBottom: 8, color: t.textMuted }}>
                 {cfg.unit}
               </p>
-              <ThresholdBar value={value} threshold={threshold} />
-            </GlassCard>
+              {/* Inline threshold bar */}
+              <div
+                style={{
+                  width: "100%",
+                  height: 4,
+                  borderRadius: 2,
+                  background: t.bgInput,
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${pct}%`,
+                    height: "100%",
+                    borderRadius: 2,
+                    background: pct > 90 ? t.neonRed : pct > 70 ? t.neonAmber : t.neonGreen,
+                    transition: "width 300ms",
+                  }}
+                />
+              </div>
+            </div>
           );
         })}
       </div>
 
       {/* History chart */}
-      <GlassCard padding="md">
-        <h3 className="text-[13px] font-semibold mb-4" style={{ color: "var(--text-primary)" }}>
+      <div style={glassCard}>
+        <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 16, color: t.textPrimary }}>
           {config.label} — 30 Day History
         </h3>
-        <div className="h-[250px]">
+        <div style={{ height: 250 }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <XAxis
                 dataKey="time"
-                tick={{ fontSize: 10, fill: "var(--text-muted)" }}
-                axisLine={{ stroke: "var(--color-chart-grid)" }}
+                tick={{ fontSize: 10, fill: t.textMuted }}
+                axisLine={{ stroke: t.chartGrid }}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fontSize: 10, fill: "var(--text-muted)" }}
+                tick={{ fontSize: 10, fill: t.textMuted }}
                 axisLine={false}
                 tickLine={false}
                 domain={["auto", "auto"]}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "var(--bg-elevated)",
-                  border: "1px solid var(--color-glass-border)",
+                  backgroundColor: t.bgElevated,
+                  border: `1px solid ${t.glassBorder}`,
                   borderRadius: 12,
                   fontSize: 12,
                 }}
-                labelStyle={{ color: "var(--text-muted)" }}
+                labelStyle={{ color: t.textMuted }}
               />
               <ReferenceLine
                 y={config.range[1]}
-                stroke="#FFB800"
+                stroke={t.neonAmber}
                 strokeDasharray="4 4"
-                label={{ value: "Threshold", position: "right", fontSize: 10, fill: "#FFB800" }}
+                label={{ value: "Threshold", position: "right", fontSize: 10, fill: t.neonAmber }}
               />
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke="#00D4AA"
+                stroke={t.teal}
                 strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 4, fill: "#00D4AA", stroke: "none" }}
+                activeDot={{ r: 4, fill: t.teal, stroke: "none" }}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </GlassCard>
+      </div>
     </div>
   );
 }

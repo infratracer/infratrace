@@ -1,19 +1,17 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getDecision } from "../api/decisions";
-import GlassCard from "../components/ui/GlassCard";
-import Badge from "../components/ui/Badge";
-import Spinner from "../components/ui/Spinner";
 import { formatDate, formatCurrency, truncateHash } from "../utils/format";
-import { decisionTypeBadgeVariant, decisionTypeLabel, riskBadgeVariant } from "../utils/risk";
+import { decisionTypeLabel, riskColor } from "../utils/risk";
 import { env } from "../config/env";
-import { ArrowLeft, ExternalLink, Link2, Shield, AlertTriangle } from "lucide-react";
 import type { Decision } from "../types";
+import { useTheme } from "../hooks/useTheme";
 
 export default function DecisionDetailPage() {
   const { id, did } = useParams<{ id: string; did: string }>();
   const [decision, setDecision] = useState<Decision | null>(null);
   const [loading, setLoading] = useState(true);
+  const t = useTheme();
 
   useEffect(() => {
     if (!id || !did) return;
@@ -29,57 +27,113 @@ export default function DecisionDetailPage() {
     })();
   }, [id, did]);
 
+  const glassCard: React.CSSProperties = {
+    background: t.bgCard,
+    backdropFilter: "blur(40px) saturate(180%)",
+    WebkitBackdropFilter: "blur(40px) saturate(180%)",
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 18,
+    boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
+    padding: "20px",
+  };
+
+  const overline: React.CSSProperties = {
+    fontSize: 9,
+    fontWeight: 600,
+    letterSpacing: "0.12em",
+    textTransform: "uppercase" as const,
+    color: t.textMuted,
+  };
+
+  const badge = (bg: string, color: string): React.CSSProperties => ({
+    display: "inline-block",
+    fontSize: 10,
+    fontWeight: 600,
+    padding: "2px 8px",
+    borderRadius: 9999,
+    background: bg,
+    color,
+    lineHeight: "18px",
+  });
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size={32} className="text-accent" />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 256 }}>
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            border: `3px solid ${t.accentDim}`,
+            borderTopColor: t.accent,
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+          }}
+        />
       </div>
     );
   }
 
   if (!decision) {
-    return <p style={{ color: "var(--text-secondary)" }}>Decision not found.</p>;
+    return <p style={{ color: t.textSecondary }}>Decision not found.</p>;
   }
 
   const d = decision;
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-4xl">
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 896 }}>
       {/* Back link */}
       <Link
         to={`/project/${id}/timeline`}
-        className="inline-flex items-center gap-1.5 text-[12px] font-medium text-accent hover:underline"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          fontSize: 12,
+          fontWeight: 500,
+          color: t.accent,
+          textDecoration: "none",
+        }}
       >
-        <ArrowLeft size={14} /> Back to Timeline
+        {"←"} Back to Timeline
       </Link>
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
         <div>
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <span className="text-[11px] font-mono" style={{ color: "var(--text-muted)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 11, fontFamily: "monospace", color: t.textMuted }}>
               #{d.sequence_number}
             </span>
-            <Badge variant={decisionTypeBadgeVariant(d.decision_type)}>
+            <span style={badge(t.accentDim, t.accent)}>
               {decisionTypeLabel(d.decision_type)}
-            </Badge>
-            <Badge variant={riskBadgeVariant(d.risk_level)}>{d.risk_level}</Badge>
+            </span>
+            <span
+              style={badge(
+                d.risk_level === "low" ? t.neonGreenDim :
+                d.risk_level === "medium" ? t.neonAmberDim : t.neonRedDim,
+                riskColor(d.risk_level)
+              )}
+            >
+              {d.risk_level}
+            </span>
           </div>
-          <h1 className="text-[20px] font-bold" style={{ color: "var(--text-primary)" }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: t.textPrimary, margin: 0 }}>
             {d.title}
           </h1>
-          <p className="text-[11px] mt-1" style={{ color: "var(--text-muted)" }}>
+          <p style={{ fontSize: 11, marginTop: 4, color: t.textMuted }}>
             {formatDate(d.created_at)} &middot; Approved by {d.approved_by}
           </p>
         </div>
         {d.cost_impact !== 0 && (
-          <div className="text-right">
-            <p className="text-[9px] uppercase tracking-widest font-semibold" style={{ color: "var(--text-muted)" }}>
-              Cost Impact
-            </p>
+          <div style={{ textAlign: "right" }}>
+            <p style={{ ...overline, marginBottom: 4 }}>Cost Impact</p>
             <p
-              className="text-[24px] font-bold"
-              style={{ color: d.cost_impact > 0 ? "#FF3366" : "#00FF88" }}
+              style={{
+                fontSize: 24,
+                fontWeight: 700,
+                margin: 0,
+                color: d.cost_impact > 0 ? t.neonRed : t.neonGreen,
+              }}
             >
               {d.cost_impact > 0 ? "+" : ""}{formatCurrency(d.cost_impact)}
             </p>
@@ -88,58 +142,54 @@ export default function DecisionDetailPage() {
       </div>
 
       {/* Description & Justification */}
-      <div className="grid gap-4 md:grid-cols-2">
-        <GlassCard padding="md">
-          <h3 className="text-[9px] uppercase tracking-widest font-semibold mb-2" style={{ color: "var(--text-muted)" }}>
-            Description
-          </h3>
-          <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
+        <div style={glassCard}>
+          <h3 style={{ ...overline, marginBottom: 8 }}>Description</h3>
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: t.textSecondary, margin: 0 }}>
             {d.description}
           </p>
-        </GlassCard>
-        <GlassCard padding="md">
-          <h3 className="text-[9px] uppercase tracking-widest font-semibold mb-2" style={{ color: "var(--text-muted)" }}>
-            Justification
-          </h3>
-          <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+        </div>
+        <div style={glassCard}>
+          <h3 style={{ ...overline, marginBottom: 8 }}>Justification</h3>
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: t.textSecondary, margin: 0 }}>
             {d.justification}
           </p>
-        </GlassCard>
+        </div>
       </div>
 
       {/* Hash Chain Position */}
-      <GlassCard padding="md">
-        <div className="flex items-center gap-2 mb-3">
-          <Link2 size={16} className="text-accent" />
-          <h3 className="text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>
+      <div style={glassCard}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: 16 }}>{"⛓"}</span>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: t.textPrimary, margin: 0 }}>
             Chain Position
           </h3>
         </div>
-        <div className="space-y-2 font-mono text-[11px]">
-          <div className="flex items-center gap-2">
-            <span style={{ color: "var(--text-muted)" }}>Previous:</span>
-            <span style={{ color: "var(--text-secondary)" }}>{truncateHash(d.previous_hash, 12)}</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: "monospace", fontSize: 11 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: t.textMuted }}>Previous:</span>
+            <span style={{ color: t.textSecondary }}>{truncateHash(d.previous_hash, 12)}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span style={{ color: "var(--text-muted)" }}>Current:</span>
-            <span className="text-neon-green">{truncateHash(d.hash, 12)}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: t.textMuted }}>Current:</span>
+            <span style={{ color: t.neonGreen }}>{truncateHash(d.hash, 12)}</span>
           </div>
         </div>
-      </GlassCard>
+      </div>
 
       {/* Blockchain Proof */}
-      <GlassCard padding="md">
-        <div className="flex items-center gap-2 mb-3">
-          <Shield size={16} className="text-accent" />
-          <h3 className="text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>
+      <div style={glassCard}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: 16 }}>{"🛡"}</span>
+          <h3 style={{ fontSize: 13, fontWeight: 600, color: t.textPrimary, margin: 0 }}>
             Blockchain Proof
           </h3>
         </div>
         {d.blockchain_tx ? (
-          <div className="space-y-2">
-            <Badge variant="chain-verified">Anchored On-Chain</Badge>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-[11px] font-mono" style={{ color: "var(--text-secondary)" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <span style={badge(t.tealDim, t.teal)}>Anchored On-Chain</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+              <span style={{ fontSize: 11, fontFamily: "monospace", color: t.textSecondary }}>
                 {truncateHash(d.blockchain_tx, 10)}
               </span>
               {env.POLYGONSCAN_URL && (
@@ -147,38 +197,56 @@ export default function DecisionDetailPage() {
                   href={`${env.POLYGONSCAN_URL}/tx/${d.blockchain_tx}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-accent hover:underline inline-flex items-center gap-1 text-[11px]"
+                  style={{
+                    color: t.accent,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    fontSize: 11,
+                    textDecoration: "none",
+                  }}
                 >
-                  View <ExternalLink size={10} />
+                  View {"↗"}
                 </a>
               )}
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <Badge variant={d.blockchain_status === "pending" ? "chain-pending" : "chain-failed"}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              style={badge(
+                d.blockchain_status === "pending" ? t.neonAmberDim : t.neonRedDim,
+                d.blockchain_status === "pending" ? t.neonAmber : t.neonRed
+              )}
+            >
               {d.blockchain_status}
-            </Badge>
-            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+            </span>
+            <span style={{ fontSize: 11, color: t.textMuted }}>
               {d.blockchain_status === "pending" ? "Waiting for confirmation..." : "Anchoring failed"}
             </span>
           </div>
         )}
-      </GlassCard>
+      </div>
 
       {/* Sensor Trigger */}
       {d.sensor_trigger_id && (
-        <GlassCard padding="md" glow="amber">
-          <div className="flex items-center gap-2">
-            <AlertTriangle size={16} className="text-neon-amber" />
-            <h3 className="text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>
+        <div
+          style={{
+            ...glassCard,
+            border: `1px solid ${t.neonAmberDim}`,
+            boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}, 0 0 20px ${t.neonAmberDim}`,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 16, color: t.neonAmber }}>{"⚠"}</span>
+            <h3 style={{ fontSize: 13, fontWeight: 600, color: t.textPrimary, margin: 0 }}>
               IoT Sensor Triggered
             </h3>
           </div>
-          <p className="text-[12px] mt-2" style={{ color: "var(--text-secondary)" }}>
+          <p style={{ fontSize: 12, marginTop: 8, color: t.textSecondary }}>
             This decision was triggered by a sensor anomaly.
           </p>
-        </GlassCard>
+        </div>
       )}
     </div>
   );
