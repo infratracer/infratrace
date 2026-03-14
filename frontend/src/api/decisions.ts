@@ -1,17 +1,27 @@
 import client from "./client";
 import type { Decision } from "../types";
 
+function normalizeDecision(d: any): Decision {
+  return {
+    ...d,
+    hash: d.record_hash || d.hash || "",
+    blockchain_tx: d.tx_hash || d.blockchain_tx || null,
+    blockchain_status: d.chain_verified ? "confirmed" : d.tx_hash ? "pending" : "none",
+    sensor_trigger_id: d.triggered_by_sensor || d.sensor_trigger_id || null,
+  };
+}
+
 export async function getDecisions(
   projectId: string,
   params?: { decision_type?: string; page?: number; per_page?: number }
 ): Promise<Decision[]> {
   const res = await client.get(`/projects/${projectId}/decisions`, { params });
-  return res.data;
+  return res.data.map(normalizeDecision);
 }
 
 export async function getDecision(projectId: string, decisionId: string): Promise<Decision> {
   const res = await client.get(`/projects/${projectId}/decisions/${decisionId}`);
-  return res.data;
+  return normalizeDecision(res.data);
 }
 
 export async function createDecision(
@@ -28,7 +38,7 @@ export async function createDecision(
   }
 ): Promise<Decision> {
   const res = await client.post(`/projects/${projectId}/decisions`, data);
-  return res.data;
+  return normalizeDecision(res.data);
 }
 
 export async function getTimeline(projectId: string) {

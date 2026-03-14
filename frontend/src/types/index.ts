@@ -13,13 +13,19 @@ export interface Project {
   name: string;
   description: string;
   status: "planning" | "active" | "on_hold" | "completed";
-  risk_level: "low" | "medium" | "high" | "critical";
-  budget: number;
-  spent: number;
-  currency: string;
+  original_budget: number;
+  current_budget: number;
+  start_date: string;
+  expected_end: string;
+  contract_address: string | null;
   created_by: string;
   created_at: string;
-  updated_at: string;
+  decision_count: number;
+  member_count: number;
+  // Computed helpers
+  budget: number;
+  spent: number;
+  risk_level: string;
 }
 
 export interface ProjectMember {
@@ -49,13 +55,21 @@ export interface Decision {
   description: string;
   justification: string;
   cost_impact: number;
+  schedule_impact_days: number;
   risk_level: RiskLevel;
   approved_by: string;
   hash: string;
+  record_hash: string;
   previous_hash: string;
   blockchain_tx: string | null;
+  tx_hash: string | null;
   blockchain_status: string;
+  block_number: number | null;
+  chain_verified: boolean;
   sensor_trigger_id: string | null;
+  triggered_by_sensor: string | null;
+  supporting_docs: string | null;
+  assumptions: string | null;
   created_by: string;
   created_at: string;
 }
