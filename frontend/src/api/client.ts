@@ -5,7 +5,6 @@ import { useAuthStore } from "../store/authStore";
 const client = axios.create({
   baseURL: `${env.API_URL}/api/v1`,
   headers: { "Content-Type": "application/json" },
-  withCredentials: true,
 });
 
 client.interceptors.request.use((config) => {
@@ -25,8 +24,7 @@ client.interceptors.response.use(
       try {
         const res = await axios.post(
           `${env.API_URL}/api/v1/auth/refresh`,
-          {},
-          { withCredentials: true }
+          {}
         );
         const token = res.data.access_token;
         useAuthStore.getState().setToken(token);
