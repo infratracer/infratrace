@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
-    DATABASE_URL_SYNC: str
+    DATABASE_URL_SYNC: str = ""
 
     # Auth
     JWT_SECRET: str
