@@ -32,7 +32,7 @@ async def _run_analysis_background(project_id: uuid.UUID, user_id: uuid.UUID) ->
             await db.rollback()
 
 
-@router.post("/projects/{project_id}/analyse", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/projects/{project_id}/analysis", status_code=status.HTTP_202_ACCEPTED)
 async def trigger_analysis(
     project_id: uuid.UUID,
     background_tasks: BackgroundTasks,

@@ -133,9 +133,9 @@ export default function AIAnalysisPage() {
   };
 
   const severityColor = (severity: string) => {
-    if (severity === "critical") return "#FF3366";
-    if (severity === "warning") return "#FFB800";
-    return "#4A9EFF";
+    if (severity === "critical") return t.neonRed;
+    if (severity === "warning") return t.neonAmber;
+    return t.accent;
   };
 
   return (
@@ -183,15 +183,15 @@ export default function AIAnalysisPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
             <div style={{
               fontSize: 48, fontWeight: 700,
-              color: latest.risk_score > 70 ? "#FF3366" : latest.risk_score > 40 ? "#FFB800" : "#00FF88",
+              color: latest.risk_score > 70 ? t.neonRed : latest.risk_score > 40 ? t.neonAmber : t.neonGreen,
             }}>{latest.risk_score}</div>
             <div style={{ flex: 1 }}>
               <div style={{ height: 12, borderRadius: 9999, overflow: "hidden", backgroundColor: t.divider }}>
                 <div style={{
                   height: "100%", borderRadius: 9999, transition: "all 1s",
                   width: `${latest.risk_score}%`,
-                  background: "linear-gradient(90deg, #00FF88, #FFB800, #FF3366)",
-                  boxShadow: `0 0 8px ${latest.risk_score > 70 ? "rgba(255,51,102,0.4)" : "rgba(255,184,0,0.4)"}`,
+                  background: `linear-gradient(90deg, ${t.neonGreen}, ${t.neonAmber}, ${t.neonRed})`,
+                  boxShadow: `0 0 8px ${latest.risk_score > 70 ? t.neonRedDim : t.neonAmberDim}`,
                 }} />
               </div>
               <p style={{ fontSize: 12, marginTop: 8, color: t.textSecondary }}>{latest.summary}</p>
