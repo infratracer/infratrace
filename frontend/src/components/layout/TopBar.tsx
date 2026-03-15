@@ -25,8 +25,8 @@ export default function TopBar({ title, onMenuClick, showMenu }: TopBarProps) {
       padding: "14px 28px",
       borderBottom: `1px solid ${t.divider}`,
       background: t.topBarBg,
-      backdropFilter: "blur(24px) saturate(180%)",
-      WebkitBackdropFilter: "blur(24px) saturate(180%)",
+      backdropFilter: "blur(32px) saturate(180%)",
+      WebkitBackdropFilter: "blur(32px) saturate(180%)",
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
@@ -36,48 +36,52 @@ export default function TopBar({ title, onMenuClick, showMenu }: TopBarProps) {
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         {showMenu && (
-          <button onClick={onMenuClick} style={{
+          <button onClick={onMenuClick} aria-label="Open menu" style={{
             background: "none", border: "none",
             color: t.textSecondary, fontSize: 18, cursor: "pointer",
-            padding: "4px 8px", borderRadius: 6,
-            transition: "color 0.2s",
+            padding: "4px 8px", borderRadius: 8,
+            transition: "color 0.25s",
           }}>{"\u2630"}</button>
         )}
         <h2 style={{
           margin: 0, fontSize: 18, fontWeight: 600,
-          color: t.textPrimary, letterSpacing: "-0.2px",
+          color: t.textPrimary, letterSpacing: "-0.3px",
         }}>{title}</h2>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         {/* Theme toggle */}
-        <button onClick={toggle} style={{
-          width: 44, height: 24, borderRadius: 12,
+        <button onClick={toggle} aria-label="Toggle theme" style={{
+          width: 46, height: 26, borderRadius: 13,
           border: `1px solid ${t.glassBorder}`,
-          background: t.bgCard, cursor: "pointer",
+          background: t.bgCard,
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          cursor: "pointer",
           position: "relative",
           display: "flex", alignItems: "center", padding: "0 3px",
-          transition: "all 0.3s",
+          transition: "all 0.35s",
           boxShadow: t.glassInnerGlow,
         }}>
           <div style={{
-            width: 18, height: 18, borderRadius: "50%",
-            background: t.mode === "dark" ? t.accent : t.neonAmber,
+            width: 20, height: 20, borderRadius: "50%",
+            background: t.mode === "dark"
+              ? `linear-gradient(135deg, ${t.accent}, ${t.teal})`
+              : `linear-gradient(135deg, ${t.neonAmber}, #FF8800)`,
             transform: t.mode === "dark" ? "translateX(0)" : "translateX(18px)",
-            transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-            boxShadow: `0 0 12px ${t.mode === "dark" ? t.accent + "50" : t.neonAmber + "50"}`,
+            transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+            boxShadow: `0 0 14px ${t.mode === "dark" ? t.accent + "40" : t.neonAmber + "40"}`,
           }} />
         </button>
-        {/* Notifications */}
-        <div style={{ position: "relative", cursor: "pointer", padding: 4 }} aria-label="Notifications">
-          <span style={{ fontSize: 17, color: t.textSecondary }}>{"\u{1F514}"}</span>
-        </div>
         {/* Logout */}
-        <button onClick={handleLogout} style={{
-          background: "none", border: `1px solid ${t.glassBorder}`,
-          color: t.textMuted, fontSize: 10, cursor: "pointer",
-          padding: "5px 12px", borderRadius: 8,
+        <button onClick={handleLogout} aria-label="Logout" style={{
+          background: t.bgCard,
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          border: `1px solid ${t.glassBorder}`,
+          color: t.textSecondary, fontSize: 10, cursor: "pointer",
+          padding: "6px 14px", borderRadius: 10,
           fontWeight: 600, letterSpacing: "0.04em",
-          transition: "all 0.2s",
+          transition: "all 0.25s",
           fontFamily: "inherit",
         }}>
           Logout

@@ -93,41 +93,38 @@ export default function LoginPage() {
         </button>
       </div>
 
-      {/* Login card */}
+      {/* Login card — iOS Liquid Glass */}
       <div style={{
         width: "100%",
-        maxWidth: 420,
-        background: t.bgCard,
-        backdropFilter: "blur(60px) saturate(180%)",
-        WebkitBackdropFilter: "blur(60px) saturate(180%)",
-        border: `1px solid ${t.glassBorder}`,
-        borderRadius: 24,
-        boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
+        maxWidth: 400,
+        background: t.mode === "dark"
+          ? "rgba(18, 28, 48, 0.35)"
+          : "rgba(255, 255, 255, 0.45)",
+        backdropFilter: "blur(80px) saturate(200%) brightness(1.05)",
+        WebkitBackdropFilter: "blur(80px) saturate(200%) brightness(1.05)",
+        border: `1px solid ${t.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.5)"}`,
+        borderRadius: 28,
+        boxShadow: t.mode === "dark"
+          ? "0 12px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -1px 0 rgba(255,255,255,0.02)"
+          : "0 12px 48px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(255,255,255,0.4)",
         padding: "48px 40px",
         position: "relative",
         zIndex: 1,
       }}>
-        {/* Subtle top highlight */}
+        {/* Top specular highlight */}
         <div style={{
-          position: "absolute", top: 0, left: 24, right: 24, height: 1,
-          background: `linear-gradient(90deg, transparent, rgba(255,255,255,${t.mode === "dark" ? "0.06" : "0.4"}), transparent)`,
-          borderRadius: "24px 24px 0 0",
+          position: "absolute", top: 0, left: 20, right: 20, height: 1,
+          background: `linear-gradient(90deg, transparent, rgba(255,255,255,${t.mode === "dark" ? "0.08" : "0.5"}), transparent)`,
+          borderRadius: "28px 28px 0 0",
         }} />
 
         {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 40 }}>
-          <div style={{
-            width: 44, height: 44, borderRadius: 14,
-            background: `linear-gradient(135deg, ${t.accent}, ${t.teal})`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 16, fontWeight: 700, color: "#FFF",
-            boxShadow: `0 4px 16px ${t.accent}30`,
-            letterSpacing: "-0.5px",
-          }}>IT</div>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: t.textPrimary, letterSpacing: "-0.3px" }}>InfraTrace</div>
-            <div style={{ fontSize: 10, color: t.textMuted, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 600, marginTop: 1 }}>Audit Platform</div>
-          </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 40 }}>
+          <img
+            src={t.mode === "dark" ? "/logo-dark.png" : "/logo-light.png"}
+            alt="InfraTrace"
+            style={{ height: 64, width: "auto", objectFit: "contain" }}
+          />
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -225,9 +222,9 @@ export default function LoginPage() {
             style={{
               width: "100%",
               padding: "14px",
-              background: loading ? t.accent + "80" : `linear-gradient(135deg, ${t.accent}, ${t.accent}DD)`,
+              background: loading ? t.accent + "80" : `linear-gradient(135deg, ${t.accent}, ${t.teal})`,
               border: "none",
-              borderRadius: 14,
+              borderRadius: 16,
               color: "#FFF",
               fontSize: 14,
               fontWeight: 600,

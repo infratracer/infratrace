@@ -36,47 +36,49 @@ export default class ErrorBoundary extends Component<Props, State> {
           justifyContent: "center",
           minHeight: 400,
           padding: 32,
+          animation: "fadeIn 0.3s ease-out",
         }}>
           <div style={{
             maxWidth: 420,
             width: "100%",
             textAlign: "center",
-            background: "rgba(15, 25, 55, 0.6)",
-            backdropFilter: "blur(40px) saturate(180%)",
-            WebkitBackdropFilter: "blur(40px) saturate(180%)",
-            border: "1px solid rgba(80, 120, 200, 0.12)",
-            borderRadius: 16,
-            padding: "40px 32px",
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+            background: "rgba(12, 22, 52, 0.45)",
+            backdropFilter: "blur(48px) saturate(180%)",
+            WebkitBackdropFilter: "blur(48px) saturate(180%)",
+            border: "1px solid rgba(100, 140, 220, 0.10)",
+            borderRadius: 20,
+            padding: "44px 36px",
+            boxShadow: "0 8px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
           }}>
             <div style={{
-              width: 48, height: 48, borderRadius: "50%",
-              background: "rgba(255, 51, 102, 0.15)",
+              width: 52, height: 52, borderRadius: 16,
+              background: "rgba(255, 51, 102, 0.12)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "0 auto 16px",
-              fontSize: 24,
+              margin: "0 auto 18px",
+              fontSize: 22, color: "#FF3366",
             }}>
               !
             </div>
             <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 8, color: "#E8ECF4" }}>
               Something went wrong
             </h2>
-            <p style={{ fontSize: 12, color: "#7B89A8", marginBottom: 24, lineHeight: 1.5 }}>
+            <p style={{ fontSize: 12, color: "#8090B0", marginBottom: 24, lineHeight: 1.6 }}>
               {this.state.error?.message || "An unexpected error occurred. Please try again."}
             </p>
             <button
               onClick={this.handleReset}
               style={{
-                padding: "10px 24px",
-                background: "#4A9EFF",
+                padding: "11px 28px",
+                background: "linear-gradient(135deg, #4A9EFF, #00D4AA)",
                 border: "none",
-                borderRadius: 10,
+                borderRadius: 12,
                 color: "#FFF",
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: "pointer",
                 fontFamily: "inherit",
-                boxShadow: "0 4px 14px rgba(74, 158, 255, 0.3)",
+                boxShadow: "0 4px 18px rgba(74, 158, 255, 0.25)",
+                transition: "all 0.25s",
               }}
             >
               Try Again

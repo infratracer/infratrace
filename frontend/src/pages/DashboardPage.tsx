@@ -55,10 +55,11 @@ export default function DashboardPage() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadData();
     return () => abortRef.current?.abort();
-  }, [activeProjectId]);
+  }, []);
 
   useSensorSocket(activeProjectId || undefined, updateReading);
 

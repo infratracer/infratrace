@@ -16,7 +16,8 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
   const { id: paramId } = useParams();
   const user = useAuthStore((s) => s.user);
   const activeProject = useProjectStore((s) => s.activeProject());
-  const projectId = paramId || useProjectStore((s) => s.activeProjectId);
+  const storeProjectId = useProjectStore((s) => s.activeProjectId);
+  const projectId = paramId || storeProjectId;
 
   const getPage = () => {
     const p = location.pathname;
@@ -66,47 +67,42 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
           onClick={onClose}
           style={{
             position: "fixed", inset: 0,
-            background: "rgba(0,0,0,0.6)",
+            background: "rgba(0,0,0,0.5)",
             zIndex: 40,
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
           }}
         />
       )}
 
       <div style={{
-        width: open ? 220 : 0,
-        minWidth: open ? 220 : 0,
+        width: open ? 224 : 0,
+        minWidth: open ? 224 : 0,
         background: t.bgSidebar,
-        backgroundImage: t.mode === "dark" ? "linear-gradient(180deg, rgba(15, 25, 55, 0.3) 0%, transparent 100%)" : "none",
+        backdropFilter: "blur(48px) saturate(180%)",
+        WebkitBackdropFilter: "blur(48px) saturate(180%)",
         borderRight: `1px solid ${t.divider}`,
         display: "flex",
         flexDirection: "column",
-        transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
         overflow: "hidden",
         position: isMobile ? "fixed" : "relative",
         left: 0, top: 0, bottom: 0,
         zIndex: 50,
-        boxShadow: isMobile && open ? `8px 0 32px rgba(0,0,0,0.4)` : "none",
+        boxShadow: isMobile && open ? `12px 0 48px rgba(0,0,0,0.4)` : "none",
       }}>
         {/* Logo */}
         <div style={{
-          padding: "20px 16px 16px",
+          padding: "22px 18px 18px",
           borderBottom: `1px solid ${t.divider}`,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: 8,
-              background: `linear-gradient(135deg, ${t.accent}, ${t.teal})`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 12, fontWeight: 700, color: "#FFF",
-              boxShadow: `0 4px 12px ${t.accent}25`,
-            }}>IT</div>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: t.textPrimary, whiteSpace: "nowrap", letterSpacing: "-0.2px" }}>InfraTrace</div>
-              <div style={{ fontSize: 8, color: t.textMuted, letterSpacing: "0.12em", textTransform: "uppercase", whiteSpace: "nowrap", fontWeight: 600 }}>Audit Platform</div>
-            </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <img
+              src={t.mode === "dark" ? "/logo-dark.png" : "/logo-light.png"}
+              alt="InfraTrace"
+              style={{ height: 36, width: "auto", objectFit: "contain" }}
+            />
           </div>
           {isMobile && (
             <button onClick={onClose} style={{ background: "none", border: "none", color: t.textMuted, fontSize: 18, cursor: "pointer", padding: 4 }}>{"\u2715"}</button>
@@ -115,49 +111,50 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
 
         {/* Project selector */}
         <div style={{ padding: "14px 16px", borderBottom: `1px solid ${t.divider}` }}>
-          <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.12em", color: t.textMuted, marginBottom: 8, fontWeight: 600 }}>Active Project</div>
+          <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.14em", color: t.textMuted, marginBottom: 8, fontWeight: 600 }}>Active Project</div>
           <div style={{
-            padding: "10px 12px",
+            padding: "10px 13px",
             background: t.bgCard,
-            backdropFilter: "blur(20px)",
-            borderRadius: 10,
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            borderRadius: 12,
             border: `1px solid ${t.glassBorder}`,
             fontSize: 12, color: t.textPrimary, fontWeight: 500, whiteSpace: "nowrap",
             display: "flex", alignItems: "center", justifyContent: "space-between",
             cursor: "pointer",
-            transition: "border-color 0.2s",
+            transition: "border-color 0.25s, background 0.25s",
           }}>
             <span>{activeProject?.name || "Select project"}</span>
-            {activeProject && <span style={{ fontSize: 8, color: t.neonGreen, textShadow: `0 0 6px ${t.neonGreen}60` }}>{"\u25CF"}</span>}
+            {activeProject && <span style={{ fontSize: 8, color: t.neonGreen, textShadow: `0 0 8px ${t.neonGreen}60` }}>{"\u25CF"}</span>}
           </div>
         </div>
 
         {/* Nav */}
-        <div style={{ padding: "8px 10px", flex: 1, overflowY: "auto" }}>
+        <div style={{ padding: "10px 10px", flex: 1, overflowY: "auto" }}>
           {navItems.map(n => {
             const isActive = page === n.id;
             return (
               <button key={n.id} onClick={() => handleNav(n.path)}
                 style={{
                   display: "flex", alignItems: "center", gap: 10, width: "100%",
-                  padding: "9px 12px", marginBottom: 2, border: "none", borderRadius: 10,
+                  padding: "9px 13px", marginBottom: 2, border: "none", borderRadius: 11,
                   cursor: "pointer", fontSize: 12, fontWeight: isActive ? 600 : 500, textAlign: "left",
                   whiteSpace: "nowrap",
                   background: isActive ? t.sidebarActive : "transparent",
                   color: isActive ? t.textPrimary : t.textSecondary,
-                  transition: "all 0.2s ease",
+                  transition: "all 0.25s ease",
                   position: "relative",
                   fontFamily: "inherit",
                 }}>
                 {isActive && (
                   <div style={{
                     position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
-                    width: 3, height: 16, borderRadius: 2,
-                    background: t.accent,
-                    boxShadow: `0 0 8px ${t.accent}60`,
+                    width: 3, height: 18, borderRadius: 2,
+                    background: `linear-gradient(180deg, ${t.accent}, ${t.teal})`,
+                    boxShadow: `0 0 10px ${t.accent}50`,
                   }} />
                 )}
-                <span style={{ fontSize: 14, width: 20, textAlign: "center", color: isActive ? t.accent : t.textMuted }}>{n.icon}</span>
+                <span style={{ fontSize: 14, width: 20, textAlign: "center", color: isActive ? t.accent : t.textMuted, transition: "color 0.25s" }}>{n.icon}</span>
                 {n.label}
               </button>
             );
@@ -166,8 +163,8 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
           {(isAdmin || isAuditor) && (
             <>
               <div style={{
-                fontSize: 9, textTransform: "uppercase", letterSpacing: "0.12em",
-                color: t.textMuted, margin: "20px 12px 8px", fontWeight: 600,
+                fontSize: 9, textTransform: "uppercase", letterSpacing: "0.14em",
+                color: t.textMuted, margin: "22px 13px 8px", fontWeight: 600,
               }}>Admin</div>
               {adminItems.map(n => {
                 const isActive = page === n.id;
@@ -175,12 +172,12 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
                   <button key={n.id} onClick={() => handleNav(n.path)}
                     style={{
                       display: "flex", alignItems: "center", gap: 10, width: "100%",
-                      padding: "9px 12px", marginBottom: 2, border: "none", borderRadius: 10,
+                      padding: "9px 13px", marginBottom: 2, border: "none", borderRadius: 11,
                       cursor: "pointer", fontSize: 12, fontWeight: isActive ? 600 : 500, textAlign: "left",
                       whiteSpace: "nowrap",
                       background: isActive ? t.sidebarActive : "transparent",
                       color: isActive ? t.textPrimary : t.textSecondary,
-                      transition: "all 0.2s ease",
+                      transition: "all 0.25s ease",
                       fontFamily: "inherit",
                     }}>
                     <span style={{ fontSize: 14, width: 20, textAlign: "center", color: isActive ? t.accent : t.textMuted }}>{n.icon}</span>
@@ -195,12 +192,12 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
         {/* User */}
         {user && (
           <div style={{
-            padding: "14px 14px",
+            padding: "16px 16px",
             borderTop: `1px solid ${t.divider}`,
             display: "flex", alignItems: "center", gap: 10,
           }}>
             <div style={{
-              width: 28, height: 28, borderRadius: "50%",
+              width: 30, height: 30, borderRadius: "50%",
               background: `linear-gradient(135deg, ${t.accentDim}, ${t.tealDim})`,
               border: `1px solid ${t.glassBorder}`,
               display: "flex", alignItems: "center", justifyContent: "center",
