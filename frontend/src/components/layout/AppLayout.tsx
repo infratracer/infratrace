@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
+import ErrorBoundary from "./ErrorBoundary";
+import ToastContainer from "../ui/ToastContainer";
 import { useTheme } from "../../hooks/useTheme";
 
 const pageTitles: Record<string, string> = {
@@ -65,9 +67,13 @@ export default function AppLayout() {
           flex: 1, overflow: "auto",
           padding: isMobile ? "18px" : "28px 32px",
         }}>
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </div>
+
+      <ToastContainer />
     </div>
   );
 }

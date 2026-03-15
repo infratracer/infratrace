@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { exportReport } from "../api/reports";
 import { useTheme } from "../hooks/useTheme";
+import { useToastStore } from "../store/toastStore";
 
 export default function ReportsPage() {
   const { id } = useParams<{ id: string }>();
   const t = useTheme();
+  const addToast = useToastStore((s) => s.addToast);
   const [downloading, setDownloading] = useState(false);
   const [options, setOptions] = useState({
     include_ai: true,
@@ -24,8 +26,10 @@ export default function ReportsPage() {
       a.download = `infratrace-report-${id}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
+      addToast("Report downloaded successfully.", "success");
     } catch (err) {
       console.error("Failed to export report:", err);
+      addToast("Failed to generate report. Please try again.", "error");
     } finally {
       setDownloading(false);
     }
@@ -42,7 +46,7 @@ export default function ReportsPage() {
     backdropFilter: "blur(40px) saturate(180%)",
     WebkitBackdropFilter: "blur(40px) saturate(180%)",
     border: `1px solid ${t.glassBorder}`,
-    borderRadius: 18,
+    borderRadius: 16,
     boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
     padding: "20px",
   };
@@ -50,20 +54,11 @@ export default function ReportsPage() {
   const buttonStyle: React.CSSProperties = {
     padding: "10px 20px",
     background: downloading ? t.accentDim : t.accent,
-    border: "none",
-    borderRadius: 10,
-    color: "#FFF",
-    fontSize: 13,
-    fontWeight: 600,
-    fontFamily: "inherit",
+    border: "none", borderRadius: 10, color: "#FFF", fontSize: 13,
+    fontWeight: 600, fontFamily: "inherit",
     cursor: downloading ? "not-allowed" : "pointer",
-    width: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    opacity: downloading ? 0.7 : 1,
-    boxShadow: t.btnShadow,
+    width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+    gap: 8, opacity: downloading ? 0.7 : 1, boxShadow: t.btnShadow,
   };
 
   return (
@@ -71,9 +66,7 @@ export default function ReportsPage() {
       <div style={glassCard}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
           <span style={{ fontSize: 18, color: t.accent }}>{"\uD83D\uDCC4"}</span>
-          <h2 style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, margin: 0 }}>
-            Export Report
-          </h2>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, margin: 0 }}>Export Report</h2>
         </div>
         <p style={{ fontSize: 12, color: t.textSecondary, marginBottom: 24, marginTop: 0 }}>
           Generate a comprehensive PDF report including decision timeline, hash chain verification, and selected data sections.
@@ -84,14 +77,9 @@ export default function ReportsPage() {
             <label
               key={tog.key}
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "10px 12px",
-                borderRadius: 8,
-                cursor: "pointer",
-                transition: "background 0.15s",
-                background: "transparent",
+                display: "flex", alignItems: "center", gap: 12,
+                padding: "10px 12px", borderRadius: 8, cursor: "pointer",
+                transition: "background 0.15s", background: "transparent",
               }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = t.bgCardHover; }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
@@ -102,31 +90,24 @@ export default function ReportsPage() {
                 onChange={() => setOptions((o) => ({ ...o, [tog.key]: !o[tog.key] }))}
                 style={{ width: 16, height: 16, borderRadius: 4, accentColor: t.accent, cursor: "pointer", fontFamily: "inherit" }}
               />
-              <span style={{ fontSize: 13, color: t.textPrimary }}>
-                {tog.label}
-              </span>
+              <span style={{ fontSize: 13, color: t.textPrimary }}>{tog.label}</span>
             </label>
           ))}
         </div>
 
         <button style={buttonStyle} onClick={handleExport} disabled={downloading}>
           {downloading ? (
-            <div
-              style={{
-                width: 16,
-                height: 16,
-                border: `2px solid rgba(255,255,255,0.3)`,
-                borderTop: `2px solid #FFF`,
-                borderRadius: "50%",
-                animation: "spin 1s linear infinite",
-              }}
-            />
+            <div style={{
+              width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)",
+              borderTop: "2px solid #FFF", borderRadius: "50%", animation: "spin 1s linear infinite",
+            }} />
           ) : (
             <span>{"\u2B07"}</span>
           )}
           {downloading ? "Generating..." : "Download PDF Report"}
         </button>
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

@@ -56,6 +56,57 @@ async def list_sensors(
     ]
 
 
+@router.get("/projects/{project_id}/sensors/latest", response_model=list[SensorReadingResponse])
+async def latest_sensors(
+    project_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[SensorReadingResponse]:
+    """Return the most recent reading for each sensor type."""
+    await require_project_access(project_id, current_user, db)
+
+    from sqlalchemy import func, and_
+
+    # Subquery: max created_at per sensor_type for this project
+    subq = (
+        select(
+            SensorReading.sensor_type,
+            func.max(SensorReading.created_at).label("max_ts"),
+        )
+        .where(SensorReading.project_id == project_id)
+        .group_by(SensorReading.sensor_type)
+        .subquery()
+    )
+
+    result = await db.execute(
+        select(SensorReading)
+        .join(
+            subq,
+            and_(
+                SensorReading.sensor_type == subq.c.sensor_type,
+                SensorReading.created_at == subq.c.max_ts,
+                SensorReading.project_id == project_id,
+            ),
+        )
+    )
+    readings = result.scalars().all()
+
+    return [
+        SensorReadingResponse(
+            id=r.id,
+            project_id=r.project_id,
+            sensor_type=r.sensor_type,
+            value=float(r.value),
+            unit=r.unit,
+            source=r.source,
+            anomaly_flag=r.anomaly_flag,
+            related_assumption_id=r.related_assumption_id,
+            created_at=r.created_at,
+        )
+        for r in readings
+    ]
+
+
 @router.get("/projects/{project_id}/sensors/anomalies", response_model=list[SensorReadingResponse])
 async def list_anomalies(
     project_id: uuid.UUID,

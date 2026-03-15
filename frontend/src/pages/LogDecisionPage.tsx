@@ -7,6 +7,7 @@ import { createDecision } from "../api/decisions";
 import { DECISION_TYPES, RISK_LEVELS } from "../utils/constants";
 import { useAuthStore } from "../store/authStore";
 import { useTheme } from "../hooks/useTheme";
+import { useToastStore } from "../store/toastStore";
 
 const decisionSchema = z.object({
   decision_type: z.string().min(1, "Required"),
@@ -28,6 +29,7 @@ export default function LogDecisionPage() {
   const [newDecisionId, setNewDecisionId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const t = useTheme();
+  const addToast = useToastStore((s) => s.addToast);
 
   const {
     register,
@@ -62,8 +64,10 @@ export default function LogDecisionPage() {
 
       setPhase("done");
       setNewDecisionId(decision.id);
+      addToast("Decision recorded successfully!", "success");
     } catch (err: any) {
       setError(err.response?.data?.detail || "Failed to create decision");
+      addToast("Failed to create decision.", "error");
       setPhase("idle");
     }
   };
@@ -73,7 +77,7 @@ export default function LogDecisionPage() {
     backdropFilter: "blur(40px) saturate(180%)",
     WebkitBackdropFilter: "blur(40px) saturate(180%)",
     border: `1px solid ${t.glassBorder}`,
-    borderRadius: 18,
+    borderRadius: 16,
     boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
     padding: "20px",
   };

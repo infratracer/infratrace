@@ -68,18 +68,8 @@ export default function TopBar({ title, onMenuClick, showMenu }: TopBarProps) {
           }} />
         </button>
         {/* Notifications */}
-        <div style={{ position: "relative", cursor: "pointer", padding: 4 }}>
+        <div style={{ position: "relative", cursor: "pointer", padding: 4 }} aria-label="Notifications">
           <span style={{ fontSize: 17, color: t.textSecondary }}>{"\u{1F514}"}</span>
-          <div style={{
-            position: "absolute", top: 0, right: 0,
-            width: 16, height: 16, borderRadius: "50%",
-            background: t.neonRed,
-            fontSize: 8, color: "#FFF",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontWeight: 700,
-            boxShadow: `0 0 10px ${t.neonRed}50`,
-            border: `2px solid ${t.mode === "dark" ? "#060B18" : "#F0F2F8"}`,
-          }}>3</div>
         </div>
         {/* Logout */}
         <button onClick={handleLogout} style={{

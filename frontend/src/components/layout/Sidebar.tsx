@@ -38,8 +38,8 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: "\u25A6", path: "/" },
     { id: "timeline", label: "Timeline", icon: "\u2502", path: `/project/${projectId}/timeline` },
-    { id: "sensors", label: "Sensors", icon: "\u25C9", path: `/project/${projectId}/sensors`, badge: "2" },
-    { id: "analysis", label: "AI Analysis", icon: "\u25C7", path: `/project/${projectId}/analysis`, badge: "4" },
+    { id: "sensors", label: "Sensors", icon: "\u25C9", path: `/project/${projectId}/sensors` },
+    { id: "analysis", label: "AI Analysis", icon: "\u25C7", path: `/project/${projectId}/analysis` },
     { id: "verify", label: "Verify Chain", icon: "\u26D3", path: `/project/${projectId}/verify` },
     { id: "log", label: "Log Decision", icon: "+", path: `/project/${projectId}/log` },
     { id: "assumptions", label: "Assumptions", icon: "\u2261", path: `/project/${projectId}/assumptions` },
@@ -75,8 +75,8 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
       )}
 
       <div style={{
-        width: open ? 240 : 0,
-        minWidth: open ? 240 : 0,
+        width: open ? 220 : 0,
+        minWidth: open ? 220 : 0,
         background: t.bgSidebar,
         backgroundImage: t.mode === "dark" ? "linear-gradient(180deg, rgba(15, 25, 55, 0.3) 0%, transparent 100%)" : "none",
         borderRight: `1px solid ${t.divider}`,
@@ -91,16 +91,16 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
       }}>
         {/* Logo */}
         <div style={{
-          padding: "22px 18px 18px",
+          padding: "20px 16px 16px",
           borderBottom: `1px solid ${t.divider}`,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{
-              width: 34, height: 34, borderRadius: 10,
+              width: 30, height: 30, borderRadius: 8,
               background: `linear-gradient(135deg, ${t.accent}, ${t.teal})`,
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 13, fontWeight: 700, color: "#FFF",
+              fontSize: 12, fontWeight: 700, color: "#FFF",
               boxShadow: `0 4px 12px ${t.accent}25`,
             }}>IT</div>
             <div>
@@ -133,15 +133,15 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
         </div>
 
         {/* Nav */}
-        <div style={{ padding: "10px 12px", flex: 1, overflowY: "auto" }}>
+        <div style={{ padding: "8px 10px", flex: 1, overflowY: "auto" }}>
           {navItems.map(n => {
             const isActive = page === n.id;
             return (
               <button key={n.id} onClick={() => handleNav(n.path)}
                 style={{
                   display: "flex", alignItems: "center", gap: 10, width: "100%",
-                  padding: "10px 12px", marginBottom: 2, border: "none", borderRadius: 10,
-                  cursor: "pointer", fontSize: 12.5, fontWeight: isActive ? 600 : 500, textAlign: "left",
+                  padding: "9px 12px", marginBottom: 2, border: "none", borderRadius: 10,
+                  cursor: "pointer", fontSize: 12, fontWeight: isActive ? 600 : 500, textAlign: "left",
                   whiteSpace: "nowrap",
                   background: isActive ? t.sidebarActive : "transparent",
                   color: isActive ? t.textPrimary : t.textSecondary,
@@ -159,14 +159,6 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
                 )}
                 <span style={{ fontSize: 14, width: 20, textAlign: "center", color: isActive ? t.accent : t.textMuted }}>{n.icon}</span>
                 {n.label}
-                {n.badge && (
-                  <span style={{
-                    marginLeft: "auto", fontSize: 8, padding: "2px 6px", borderRadius: 5,
-                    background: n.id === "sensors" ? t.neonAmberDim : t.neonRedDim,
-                    color: n.id === "sensors" ? t.neonAmber : t.neonRed,
-                    fontWeight: 700,
-                  }}>{n.badge}</span>
-                )}
               </button>
             );
           })}
@@ -183,8 +175,8 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
                   <button key={n.id} onClick={() => handleNav(n.path)}
                     style={{
                       display: "flex", alignItems: "center", gap: 10, width: "100%",
-                      padding: "10px 12px", marginBottom: 2, border: "none", borderRadius: 10,
-                      cursor: "pointer", fontSize: 12.5, fontWeight: isActive ? 600 : 500, textAlign: "left",
+                      padding: "9px 12px", marginBottom: 2, border: "none", borderRadius: 10,
+                      cursor: "pointer", fontSize: 12, fontWeight: isActive ? 600 : 500, textAlign: "left",
                       whiteSpace: "nowrap",
                       background: isActive ? t.sidebarActive : "transparent",
                       color: isActive ? t.textPrimary : t.textSecondary,
@@ -203,12 +195,12 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
         {/* User */}
         {user && (
           <div style={{
-            padding: "16px 16px",
+            padding: "14px 14px",
             borderTop: `1px solid ${t.divider}`,
             display: "flex", alignItems: "center", gap: 10,
           }}>
             <div style={{
-              width: 32, height: 32, borderRadius: "50%",
+              width: 28, height: 28, borderRadius: "50%",
               background: `linear-gradient(135deg, ${t.accentDim}, ${t.tealDim})`,
               border: `1px solid ${t.glassBorder}`,
               display: "flex", alignItems: "center", justifyContent: "center",

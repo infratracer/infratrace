@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getProjects } from "../api/projects";
 import { getDecisions } from "../api/decisions";
@@ -6,6 +6,7 @@ import { useProjectStore } from "../store/projectStore";
 import { useSensorStore } from "../store/sensorStore";
 import { useSensorSocket } from "../hooks/useSensorSocket";
 import { useTheme } from "../hooks/useTheme";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { formatCurrency } from "../utils/format";
 import type { Project, Decision, SensorType } from "../types";
 import { SENSOR_CONFIG } from "../utils/constants";
@@ -13,9 +14,11 @@ import { SENSOR_CONFIG } from "../utils/constants";
 export default function DashboardPage() {
   const t = useTheme();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [projects, setProjectsList] = useState<Project[]>([]);
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [hoveredProject, setHoveredProject] = useState<number | null>(null);
   const [hoveredMetric, setHoveredMetric] = useState<number | null>(null);
   const setProjects = useProjectStore((s) => s.setProjects);
@@ -23,26 +26,39 @@ export default function DashboardPage() {
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
   const latest = useSensorStore((s) => s.latest);
   const updateReading = useSensorStore((s) => s.updateReading);
+  const abortRef = useRef<AbortController>();
+
+  const loadData = async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setError(null);
+    setLoading(true);
+    try {
+      const projs = await getProjects();
+      if (controller.signal.aborted) return;
+      setProjectsList(projs);
+      setProjects(projs);
+      if (projs.length > 0) {
+        const activeId = activeProjectId || projs[0].id;
+        setActiveProject(activeId);
+        const decs = await getDecisions(activeId);
+        if (controller.signal.aborted) return;
+        setDecisions(decs);
+      }
+    } catch (err: any) {
+      if (err?.name === "AbortError" || err?.code === "ERR_CANCELED") return;
+      console.error("Failed to load dashboard data:", err);
+      setError("Failed to load dashboard data. Please check your connection and try again.");
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        const projs = await getProjects();
-        setProjectsList(projs);
-        setProjects(projs);
-        if (projs.length > 0) {
-          const activeId = activeProjectId || projs[0].id;
-          setActiveProject(activeId);
-          const decs = await getDecisions(activeId);
-          setDecisions(decs);
-        }
-      } catch (err) {
-        console.error("Failed to load dashboard data:", err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    loadData();
+    return () => abortRef.current?.abort();
+  }, [activeProjectId]);
 
   useSensorSocket(activeProjectId || undefined, updateReading);
 
@@ -61,19 +77,54 @@ export default function DashboardPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 300 }}>
+        <div style={{
+          ...glassCardStyle(t),
+          maxWidth: 420, width: "100%", textAlign: "center", padding: "40px 32px",
+        }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>!</div>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, marginBottom: 8 }}>
+            Failed to Load Dashboard
+          </h3>
+          <p style={{ fontSize: 12, color: t.textSecondary, marginBottom: 20, lineHeight: 1.5 }}>
+            {error}
+          </p>
+          <button onClick={loadData} style={primaryBtnStyle(t)}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (projects.length === 0) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 300 }}>
+        <div style={{
+          ...glassCardStyle(t),
+          maxWidth: 420, width: "100%", textAlign: "center", padding: "40px 32px",
+        }}>
+          <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.6 }}>{"\u25A6"}</div>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, marginBottom: 8 }}>
+            No Projects Yet
+          </h3>
+          <p style={{ fontSize: 12, color: t.textSecondary, lineHeight: 1.5 }}>
+            Create your first project to start tracking decisions.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const totalBudget = projects.reduce((s, p) => s + p.budget, 0);
   const totalSpent = projects.reduce((s, p) => s + p.spent, 0);
   const drift = totalBudget > 0 ? ((totalSpent - totalBudget) / totalBudget) * 100 : 0;
   const anomCount = Object.values(latest).filter(r => r?.anomaly).length;
 
   const glassCard = (extra: React.CSSProperties = {}): React.CSSProperties => ({
-    background: t.bgCard,
-    backdropFilter: "blur(40px) saturate(180%)",
-    WebkitBackdropFilter: "blur(40px) saturate(180%)",
-    border: `1px solid ${t.glassBorder}`,
-    borderRadius: 18,
-    boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
-    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    ...glassCardStyle(t),
     ...extra,
   });
 
@@ -114,11 +165,15 @@ export default function DashboardPage() {
     };
   });
 
+  // Compute real chain status
+  const chainVerifiedCount = decisions.filter(d => d.blockchain_tx).length;
+  const chainPct = decisions.length > 0 ? Math.round((chainVerifiedCount / decisions.length) * 100) : 0;
+
   const metrics = [
     { label: "BUDGET EXPOSURE", value: formatCurrency(totalBudget), sub: `${projects.length} active projects`, color: t.textPrimary, glow: t.accentDim, accentLine: t.accent },
     { label: "BUDGET DRIFT", value: `${drift >= 0 ? "+" : ""}${drift.toFixed(1)}%`, sub: `${formatCurrency(Math.abs(totalSpent - totalBudget))} ${drift >= 0 ? "over" : "under"}`, color: drift > 10 ? t.neonRed : drift > 5 ? t.neonAmber : t.neonGreen, glow: drift > 10 ? t.neonRedDim : t.accentDim, accentLine: drift > 10 ? t.neonRed : t.neonAmber },
     { label: "ACTIVE ANOMALIES", value: anomCount.toString(), sub: `${decisions.length} total decisions`, color: anomCount > 0 ? t.neonRed : t.neonGreen, glow: anomCount > 0 ? t.neonRedDim : t.neonGreenDim, accentLine: anomCount > 0 ? t.neonRed : t.neonGreen },
-    { label: "CHAIN STATUS", value: "100%", sub: `${decisions.length} records verified`, color: t.neonGreen, glow: t.neonGreenDim, accentLine: t.neonGreen },
+    { label: "CHAIN STATUS", value: `${chainPct}%`, sub: `${chainVerifiedCount}/${decisions.length} anchored`, color: chainPct === 100 ? t.neonGreen : chainPct > 0 ? t.neonAmber : t.textMuted, glow: chainPct === 100 ? t.neonGreenDim : t.accentDim, accentLine: chainPct === 100 ? t.neonGreen : t.neonAmber },
   ];
 
   return (
@@ -150,7 +205,7 @@ export default function DashboardPage() {
       )}
 
       {/* Metrics */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
         {metrics.map((m, i) => (
           <div
             key={i}
@@ -158,9 +213,9 @@ export default function DashboardPage() {
             onMouseLeave={() => setHoveredMetric(null)}
             style={{
               ...glassCard({
-                padding: "22px 20px 18px",
+                padding: "18px 18px 16px",
                 background: `linear-gradient(135deg, ${m.glow}, ${t.bgCard})`,
-                transform: hoveredMetric === i ? "translateY(-2px)" : "none",
+                transform: hoveredMetric === i ? "translateY(-1px)" : "none",
                 border: `1px solid ${hoveredMetric === i ? t.glassBorderHover : t.glassBorder}`,
               }),
               position: "relative",
@@ -174,7 +229,7 @@ export default function DashboardPage() {
               borderRadius: "0 0 2px 2px",
             }} />
             <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", color: t.textMuted, marginBottom: 12, textTransform: "uppercase" }}>{m.label}</div>
-            <div style={{ fontSize: 32, fontWeight: 700, color: m.color, letterSpacing: "-0.02em", lineHeight: 1 }}>{m.value}</div>
+            <div style={{ fontSize: 30, fontWeight: 700, color: m.color, letterSpacing: "-0.02em", lineHeight: 1 }}>{m.value}</div>
             <div style={{ fontSize: 11, color: t.textSecondary, marginTop: 10 }}>{m.sub}</div>
           </div>
         ))}
@@ -182,7 +237,7 @@ export default function DashboardPage() {
 
       {/* Cost trajectory */}
       {costData.length > 1 && (
-        <div style={glassCard({ padding: "24px 24px", marginBottom: 28 })}>
+        <div style={glassCard({ padding: "20px 22px", marginBottom: 24 })}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <div>
               <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", color: t.textMuted, textTransform: "uppercase" }}>Cost Trajectory</div>
@@ -238,10 +293,10 @@ export default function DashboardPage() {
       )}
 
       {/* Projects + Sensors/Activity grid */}
-      <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 768 ? "1fr" : "1fr 340px", gap: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 320px", gap: 16 }}>
         {/* Project cards */}
         <div>
-          <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", color: t.textMuted, textTransform: "uppercase", marginBottom: 12 }}>Projects</div>
+          <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", color: t.textMuted, textTransform: "uppercase", marginBottom: 10 }}>Projects</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {projects.map((p, i) => {
               const pct = p.budget > 0 ? ((p.spent - p.budget) / p.budget) * 100 : 0;
@@ -249,9 +304,12 @@ export default function DashboardPage() {
               return (
                 <div
                   key={p.id}
+                  role="button"
+                  tabIndex={0}
                   onMouseEnter={() => setHoveredProject(i)}
                   onMouseLeave={() => setHoveredProject(null)}
                   onClick={() => { setActiveProject(p.id); navigate(`/project/${p.id}/timeline`); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { setActiveProject(p.id); navigate(`/project/${p.id}/timeline`); } }}
                   style={glassCard({
                     padding: "20px 22px", cursor: "pointer",
                     background: isHovered ? t.bgCardHover : t.bgCard,
@@ -264,7 +322,6 @@ export default function DashboardPage() {
                     <div style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, letterSpacing: "-0.1px" }}>{p.name}</div>
                     <div style={{ display: "flex", gap: 6 }}>
                       <Badge text={p.risk_level.toUpperCase()} color={riskColor(p.risk_level)} bg={riskBg(p.risk_level)} />
-                      <Badge text={"\u26D3 \u2713"} color={t.neonGreen} bg={t.neonGreenDim} />
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
@@ -326,31 +383,37 @@ export default function DashboardPage() {
           {/* Activity feed */}
           <div>
             <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", color: t.textMuted, textTransform: "uppercase", marginBottom: 12 }}>Activity</div>
-            <div style={glassCard({ padding: "16px 18px" })}>
-              {decisions.slice(0, 6).map((d, i) => (
-                <div key={d.id} style={{
-                  padding: "12px 0",
-                  borderBottom: i < Math.min(decisions.length, 6) - 1 ? `1px solid ${t.divider}` : "none",
-                  cursor: "pointer",
-                }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{
-                      color: actColor[d.decision_type] || t.accent, fontSize: 12, marginTop: 2,
-                      textShadow: `0 0 8px ${(actColor[d.decision_type] || t.accent)}30`,
-                    }}>
-                      {actIcon[d.decision_type] || "\u25CB"}
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, color: t.textSecondary, lineHeight: 1.5, fontWeight: 500 }}>{d.title}</div>
-                      <div style={{ fontSize: 10, color: t.textMuted, marginTop: 3 }}>
-                        {d.cost_impact !== 0 ? `${d.cost_impact > 0 ? "+" : ""}${formatCurrency(d.cost_impact)}` : d.decision_type.replace("_", " ")}
+            {decisions.length === 0 ? (
+              <div style={glassCard({ padding: "24px 18px", textAlign: "center" })}>
+                <p style={{ fontSize: 12, color: t.textMuted }}>No decisions recorded yet.</p>
+              </div>
+            ) : (
+              <div style={glassCard({ padding: "16px 18px" })}>
+                {decisions.slice(0, 6).map((d, i) => (
+                  <div key={d.id} style={{
+                    padding: "12px 0",
+                    borderBottom: i < Math.min(decisions.length, 6) - 1 ? `1px solid ${t.divider}` : "none",
+                    cursor: "pointer",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                      <span style={{
+                        color: actColor[d.decision_type] || t.accent, fontSize: 12, marginTop: 2,
+                        textShadow: `0 0 8px ${(actColor[d.decision_type] || t.accent)}30`,
+                      }}>
+                        {actIcon[d.decision_type] || "\u25CB"}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, color: t.textSecondary, lineHeight: 1.5, fontWeight: 500 }}>{d.title}</div>
+                        <div style={{ fontSize: 10, color: t.textMuted, marginTop: 3 }}>
+                          {d.cost_impact !== 0 ? `${d.cost_impact > 0 ? "+" : ""}${formatCurrency(d.cost_impact)}` : d.decision_type.replace("_", " ")}
+                        </div>
                       </div>
+                      <span style={{ fontSize: 9, color: t.textMuted, flexShrink: 0, fontWeight: 500 }}>#{d.sequence_number}</span>
                     </div>
-                    <span style={{ fontSize: 9, color: t.textMuted, flexShrink: 0, fontWeight: 500 }}>#{d.sequence_number}</span>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -364,4 +427,32 @@ export default function DashboardPage() {
       `}</style>
     </div>
   );
+}
+
+// Shared helpers
+function glassCardStyle(t: any): React.CSSProperties {
+  return {
+    background: t.bgCard,
+    backdropFilter: "blur(40px) saturate(180%)",
+    WebkitBackdropFilter: "blur(40px) saturate(180%)",
+    border: `1px solid ${t.glassBorder}`,
+    borderRadius: 16,
+    boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
+    transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+  };
+}
+
+function primaryBtnStyle(t: any): React.CSSProperties {
+  return {
+    padding: "10px 24px",
+    background: t.accent,
+    border: "none",
+    borderRadius: 10,
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+    boxShadow: t.btnShadow,
+  };
 }
