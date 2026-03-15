@@ -134,7 +134,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
           {navItems.map(n => {
             const isActive = page === n.id;
             return (
-              <button key={n.id} onClick={() => handleNav(n.path)}
+              <button key={n.id} onClick={() => handleNav(n.path)} aria-label={`Navigate to ${n.label}`}
                 style={{
                   display: "flex", alignItems: "center", gap: 10, width: "100%",
                   padding: "9px 13px", marginBottom: 2, border: "none", borderRadius: 11,

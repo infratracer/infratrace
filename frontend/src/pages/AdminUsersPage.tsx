@@ -39,7 +39,14 @@ export default function AdminUsersPage() {
 
   useEffect(() => { loadUsers(); }, []);
 
+  const [creating, setCreating] = useState(false);
+
   const handleCreate = async () => {
+    if (!form.email || !form.password || !form.full_name) {
+      addToast("Please fill in all required fields.", "error");
+      return;
+    }
+    setCreating(true);
     try {
       await createUser(form);
       setShowForm(false);
@@ -49,6 +56,8 @@ export default function AdminUsersPage() {
     } catch (err) {
       console.error("Failed to create user:", err);
       addToast("Failed to create user.", "error");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -191,7 +200,7 @@ export default function AdminUsersPage() {
                   onChange={(e) => setForm((f) => ({ ...f, organisation: e.target.value }))} />
               </div>
             </div>
-            <button style={buttonStyle} onClick={handleCreate}>Create User</button>
+            <button style={{ ...buttonStyle, opacity: creating ? 0.6 : 1, cursor: creating ? "not-allowed" : "pointer" }} onClick={handleCreate} disabled={creating}>{creating ? "Creating..." : "Create User"}</button>
           </div>
         </div>
       )}

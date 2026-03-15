@@ -6,6 +6,7 @@ interface SensorState {
   anomalies: SensorMessage[];
   updateReading: (msg: SensorMessage) => void;
   clearAnomalies: () => void;
+  clearAll: () => void;
 }
 
 export const useSensorStore = create<SensorState>((set) => ({
@@ -19,4 +20,5 @@ export const useSensorStore = create<SensorState>((set) => ({
         : state.anomalies,
     })),
   clearAnomalies: () => set({ anomalies: [] }),
+  clearAll: () => set({ latest: {}, anomalies: [] }),
 }));

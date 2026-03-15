@@ -36,8 +36,15 @@ export default function AssumptionsPage() {
 
   useEffect(() => { loadData(); }, [id]);
 
+  const [creating, setCreating] = useState(false);
+
   const handleCreate = async () => {
     if (!id) return;
+    if (!formData.category || !formData.description) {
+      addToast("Category and description are required.", "error");
+      return;
+    }
+    setCreating(true);
     try {
       await createAssumption(id, {
         category: formData.category,
@@ -53,6 +60,8 @@ export default function AssumptionsPage() {
     } catch (err) {
       console.error("Failed to create assumption:", err);
       addToast("Failed to create assumption.", "error");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -216,7 +225,7 @@ export default function AssumptionsPage() {
                   placeholder={formData.sensor_type ? SENSOR_CONFIG[formData.sensor_type as SensorType]?.unit : ""} />
               </div>
             </div>
-            <button style={buttonStyle} onClick={handleCreate}>Save Assumption</button>
+            <button style={{ ...buttonStyle, opacity: creating ? 0.6 : 1, cursor: creating ? "not-allowed" : "pointer" }} onClick={handleCreate} disabled={creating}>{creating ? "Saving..." : "Save Assumption"}</button>
           </div>
         </div>
       )}

@@ -48,7 +48,7 @@ export default function LogDecisionPage() {
     },
   });
 
-  const onSubmit = async (data: Record<string, unknown>) => {
+  const onSubmit = async (data: { decision_type: string; title: string; description: string; justification: string; cost_impact?: number; risk_level?: string; approved_by: string }) => {
     if (!id) return;
     setError("");
 
@@ -60,7 +60,7 @@ export default function LogDecisionPage() {
       await new Promise((r) => setTimeout(r, 600));
 
       setPhase("anchoring");
-      const decision = await createDecision(id, data as any);
+      const decision = await createDecision(id, data);
 
       setPhase("done");
       setNewDecisionId(decision.id);
