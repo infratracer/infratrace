@@ -13,7 +13,7 @@ export default function DecisionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const t = useTheme();
-  const abortRef = useRef<AbortController>();
+  const abortRef = useRef<AbortController | null>(null);
 
   const loadData = async () => {
     if (!id || !did) return;

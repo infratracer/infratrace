@@ -1,17 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-
-export interface Project {
-  id: string;
-  name: string;
-  description: string;
-  status: string;
-  risk_level: string;
-  budget: number;
-  spent: number;
-  created_at: string;
-  updated_at: string;
-}
+import type { Project } from "../types";
 
 interface ProjectState {
   projects: Project[];

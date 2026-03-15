@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
   const latest = useSensorStore((s) => s.latest);
   const updateReading = useSensorStore((s) => s.updateReading);
-  const abortRef = useRef<AbortController>();
+  const abortRef = useRef<AbortController | null>(null);
 
   const loadData = async () => {
     abortRef.current?.abort();

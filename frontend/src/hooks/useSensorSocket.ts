@@ -12,7 +12,7 @@ export function useSensorSocket(
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;
   const [status, setStatus] = useState<WsStatus>("disconnected");
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout>>();
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const connect = useCallback(() => {
     if (!projectId) return;
@@ -42,7 +42,7 @@ export function useSensorSocket(
   useEffect(() => {
     connect();
     return () => {
-      clearTimeout(reconnectTimer.current);
+      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       wsRef.current?.close();
     };
   }, [connect]);

@@ -15,7 +15,7 @@ export default function TimelinePage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("");
   const t = useTheme();
-  const abortRef = useRef<AbortController>();
+  const abortRef = useRef<AbortController | null>(null);
 
   const loadData = async () => {
     if (!id) return;

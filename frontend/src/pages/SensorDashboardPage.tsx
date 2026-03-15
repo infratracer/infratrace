@@ -17,7 +17,7 @@ export default function SensorDashboardPage() {
   const latest = useSensorStore((s) => s.latest);
   const updateReading = useSensorStore((s) => s.updateReading);
   const t = useTheme();
-  const abortRef = useRef<AbortController>();
+  const abortRef = useRef<AbortController | null>(null);
 
   const wsStatus = useSensorSocket(id, updateReading);
 

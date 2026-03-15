@@ -17,8 +17,8 @@ export default function AIAnalysisPage() {
   const t = useTheme();
   const isMobile = useIsMobile();
   const addToast = useToastStore((s) => s.addToast);
-  const abortRef = useRef<AbortController>();
-  const pollRef = useRef<ReturnType<typeof setInterval>>();
+  const abortRef = useRef<AbortController | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadData = useCallback(async () => {
     if (!id) return;
@@ -43,7 +43,7 @@ export default function AIAnalysisPage() {
     loadData();
     return () => {
       abortRef.current?.abort();
-      clearInterval(pollRef.current);
+      if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [loadData]);
 
@@ -61,18 +61,18 @@ export default function AIAnalysisPage() {
         try {
           const data = await getAnalyses(id);
           if (data.length > startCount) {
-            clearInterval(pollRef.current);
+            if (pollRef.current) clearInterval(pollRef.current);
             setAnalyses(data);
             setRunning(false);
             addToast("Analysis complete!", "success");
           } else if (attempts >= 15) {
-            clearInterval(pollRef.current);
+            if (pollRef.current) clearInterval(pollRef.current);
             setAnalyses(data);
             setRunning(false);
             addToast("Analysis may still be processing. Refresh to check.", "info");
           }
         } catch {
-          clearInterval(pollRef.current);
+          if (pollRef.current) clearInterval(pollRef.current);
           setRunning(false);
         }
       }, 2000);

@@ -45,7 +45,7 @@ export default function ProjectCardList({ projects }: ProjectCardListProps) {
                 >
                   {p.name}
                 </h3>
-                <Badge variant={riskBadgeVariant(p.risk_level)}>
+                <Badge variant={riskBadgeVariant(p.risk_level as import("../../types").RiskLevel)}>
                   {p.risk_level}
                 </Badge>
               </div>
