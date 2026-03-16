@@ -20,7 +20,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hoveredProject, setHoveredProject] = useState<number | null>(null);
-  const [hoveredMetric, setHoveredMetric] = useState<number | null>(null);
   const setProjects = useProjectStore((s) => s.setProjects);
   const setActiveProject = useProjectStore((s) => s.setActiveProject);
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
@@ -48,8 +47,7 @@ export default function DashboardPage() {
       }
     } catch (err: any) {
       if (err?.name === "AbortError" || err?.code === "ERR_CANCELED") return;
-      console.error("Failed to load dashboard data:", err);
-      setError("Failed to load dashboard data. Please check your connection and try again.");
+      setError("Unable to load dashboard. Check your connection.");
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
@@ -63,17 +61,24 @@ export default function DashboardPage() {
 
   useSensorSocket(activeProjectId || undefined, updateReading);
 
+  const glass = (extra: React.CSSProperties = {}): React.CSSProperties => ({
+    background: t.bgCard,
+    backdropFilter: "blur(60px) saturate(150%)",
+    WebkitBackdropFilter: "blur(60px) saturate(150%)",
+    border: `0.5px solid ${t.glassBorder}`,
+    borderRadius: 16,
+    boxShadow: t.glassShadow,
+    transition: "all 0.2s ease",
+    ...extra,
+  });
+
   if (loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 300 }}>
         <div style={{
-          width: 32, height: 32,
-          border: `3px solid ${t.glassBorder}`,
-          borderTopColor: t.accent,
-          borderRadius: "50%",
-          animation: "spin 0.8s linear infinite",
+          width: 28, height: 28, border: `2.5px solid ${t.glassBorder}`,
+          borderTopColor: t.accent, borderRadius: "50%", animation: "spin 0.8s linear infinite",
         }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -81,20 +86,10 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 300 }}>
-        <div style={{
-          ...glassCardStyle(t),
-          maxWidth: 420, width: "100%", textAlign: "center", padding: "40px 32px",
-        }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>!</div>
-          <h3 style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, marginBottom: 8 }}>
-            Failed to Load Dashboard
-          </h3>
-          <p style={{ fontSize: 12, color: t.textSecondary, marginBottom: 20, lineHeight: 1.5 }}>
-            {error}
-          </p>
-          <button onClick={loadData} style={primaryBtnStyle(t)}>
-            Retry
-          </button>
+        <div style={{ ...glass({ maxWidth: 380, width: "100%", textAlign: "center", padding: "36px 28px" }) }}>
+          <p style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, marginBottom: 6 }}>Unable to Load</p>
+          <p style={{ fontSize: 13, color: t.textSecondary, marginBottom: 20 }}>{error}</p>
+          <button onClick={loadData} style={{ padding: "8px 20px", background: t.accent, border: "none", borderRadius: 8, color: "#FFF", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>Try Again</button>
         </div>
       </div>
     );
@@ -103,17 +98,9 @@ export default function DashboardPage() {
   if (projects.length === 0) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 300 }}>
-        <div style={{
-          ...glassCardStyle(t),
-          maxWidth: 420, width: "100%", textAlign: "center", padding: "40px 32px",
-        }}>
-          <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.6 }}>{"\u25A6"}</div>
-          <h3 style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, marginBottom: 8 }}>
-            No Projects Yet
-          </h3>
-          <p style={{ fontSize: 12, color: t.textSecondary, lineHeight: 1.5 }}>
-            Create your first project to start tracking decisions.
-          </p>
+        <div style={{ ...glass({ maxWidth: 380, width: "100%", textAlign: "center", padding: "36px 28px" }) }}>
+          <p style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, marginBottom: 6 }}>No Projects</p>
+          <p style={{ fontSize: 13, color: t.textSecondary }}>Create your first project to get started.</p>
         </div>
       </div>
     );
@@ -123,24 +110,10 @@ export default function DashboardPage() {
   const totalSpent = projects.reduce((s, p) => s + p.spent, 0);
   const drift = totalBudget > 0 ? ((totalSpent - totalBudget) / totalBudget) * 100 : 0;
   const anomCount = Object.values(latest).filter(r => r?.anomaly).length;
-
-  const glassCard = (extra: React.CSSProperties = {}): React.CSSProperties => ({
-    ...glassCardStyle(t),
-    ...extra,
-  });
-
-  const Badge = ({ text, color, bg }: { text: string; color: string; bg: string }) => (
-    <span style={{
-      fontSize: 9, fontWeight: 600, padding: "3px 10px", borderRadius: 6,
-      background: bg, color, letterSpacing: "0.03em",
-    }}>{text}</span>
-  );
-
-  const riskColor = (risk: string) => risk === "critical" || risk === "high" ? t.neonRed : risk === "medium" ? t.neonAmber : t.neonGreen;
-  const riskBg = (risk: string) => risk === "critical" || risk === "high" ? t.neonRedDim : risk === "medium" ? t.neonAmberDim : t.neonGreenDim;
-
-  const actIcon: Record<string, string> = { scope_change: "\u25CB", cost_revision: "\u25CB", assumption_change: "\u25C7", contractor_change: "\u25C9", schedule_change: "\u25CB", risk_acceptance: "\u25C7", approval: "\u26D3" };
-  const actColor: Record<string, string> = { scope_change: t.accent, cost_revision: t.neonRed, assumption_change: t.neonAmber, contractor_change: t.teal, schedule_change: t.textSecondary, risk_acceptance: t.neonAmber, approval: t.neonGreen };
+  const chainVerifiedCount = decisions.filter(d => d.blockchain_tx).length;
+  const chainPct = decisions.length > 0 ? Math.round((chainVerifiedCount / decisions.length) * 100) : 0;
+  const activeProject = projects.find(p => p.id === activeProjectId);
+  const budget = activeProject?.budget || 0;
 
   const costData = decisions
     .sort((a, b) => a.sequence_number - b.sequence_number)
@@ -150,202 +123,151 @@ export default function DashboardPage() {
       return acc;
     }, []);
 
-  const activeProject = projects.find(p => p.id === activeProjectId);
-  const budget = activeProject?.budget || 0;
-
   const sensorTypes = Object.keys(SENSOR_CONFIG) as SensorType[];
   const sensorData = sensorTypes.slice(0, 4).map(type => {
     const cfg = SENSOR_CONFIG[type];
     const reading = latest[type];
-    return {
-      name: cfg.label,
-      val: reading?.value ?? cfg.base,
-      unit: cfg.unit,
-      thresh: reading?.threshold ?? cfg.range[1],
-      anom: reading?.anomaly ?? false,
-    };
+    return { name: cfg.label, val: reading?.value ?? cfg.base, unit: cfg.unit, thresh: reading?.threshold ?? cfg.range[1], anom: reading?.anomaly ?? false };
   });
 
-  // Compute real chain status
-  const chainVerifiedCount = decisions.filter(d => d.blockchain_tx).length;
-  const chainPct = decisions.length > 0 ? Math.round((chainVerifiedCount / decisions.length) * 100) : 0;
+  const driftColor = drift > 15 ? t.neonRed : drift > 5 ? t.neonAmber : t.neonGreen;
 
   const metrics = [
-    { label: "BUDGET EXPOSURE", value: formatCurrency(totalBudget), sub: `${projects.length} active projects`, color: t.textPrimary, glow: t.accentDim, accentLine: t.accent },
-    { label: "BUDGET DRIFT", value: `${drift >= 0 ? "+" : ""}${drift.toFixed(1)}%`, sub: `${formatCurrency(Math.abs(totalSpent - totalBudget))} ${drift >= 0 ? "over" : "under"}`, color: drift > 10 ? t.neonRed : drift > 5 ? t.neonAmber : t.neonGreen, glow: drift > 10 ? t.neonRedDim : t.accentDim, accentLine: drift > 10 ? t.neonRed : t.neonAmber },
-    { label: "ACTIVE ANOMALIES", value: anomCount.toString(), sub: `${decisions.length} total decisions`, color: anomCount > 0 ? t.neonRed : t.neonGreen, glow: anomCount > 0 ? t.neonRedDim : t.neonGreenDim, accentLine: anomCount > 0 ? t.neonRed : t.neonGreen },
-    { label: "CHAIN STATUS", value: `${chainPct}%`, sub: `${chainVerifiedCount}/${decisions.length} anchored`, color: chainPct === 100 ? t.neonGreen : chainPct > 0 ? t.neonAmber : t.textMuted, glow: chainPct === 100 ? t.neonGreenDim : t.accentDim, accentLine: chainPct === 100 ? t.neonGreen : t.neonAmber },
+    { label: "Total Budget", value: formatCurrency(totalBudget), sub: `${projects.length} active project${projects.length !== 1 ? "s" : ""}`, color: t.textPrimary },
+    { label: "Budget Drift", value: `${drift >= 0 ? "+" : ""}${drift.toFixed(1)}%`, sub: `${formatCurrency(Math.abs(totalSpent - totalBudget))} ${drift >= 0 ? "over" : "under"} budget`, color: driftColor },
+    { label: "Sensor Alerts", value: anomCount.toString(), sub: `${decisions.length} decisions tracked`, color: anomCount > 0 ? t.neonRed : t.neonGreen },
+    { label: "Chain Status", value: `${chainPct}%`, sub: `${chainVerifiedCount} of ${decisions.length} anchored`, color: chainPct === 100 ? t.neonGreen : t.accent },
   ];
 
+  const riskColor = (risk: string) => risk === "critical" || risk === "high" ? t.neonRed : risk === "medium" ? t.neonAmber : t.neonGreen;
+
   return (
-    <div>
+    <div style={{ animation: "fadeIn 0.3s ease" }}>
       {/* Alert strip */}
       {anomCount > 0 && (
         <div style={{
-          marginBottom: 24, padding: "12px 18px", borderRadius: 14,
-          background: `linear-gradient(90deg, ${t.neonAmberDim}, transparent)`,
-          border: `1px solid ${t.neonAmber}18`,
-          display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
-          backdropFilter: "blur(20px)",
+          marginBottom: 20, padding: "10px 16px", borderRadius: 12,
+          background: t.neonAmberDim, border: `0.5px solid ${t.neonAmber}20`,
+          display: "flex", alignItems: "center", gap: 10,
         }}>
-          <div style={{
-            width: 7, height: 7, borderRadius: "50%", background: t.neonAmber,
-            boxShadow: `0 0 12px ${t.neonAmber}80`,
-            animation: "pulse 2s ease-in-out infinite",
-          }} />
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: t.neonAmber, animation: "pulse 2s infinite" }} />
           <span style={{ fontSize: 13, color: t.neonAmber, flex: 1 }}>
-            {anomCount} sensor anomal{anomCount === 1 ? "y" : "ies"} detected
+            {anomCount} sensor alert{anomCount !== 1 ? "s" : ""} detected
           </span>
-          <span
-            onClick={() => activeProjectId && navigate(`/project/${activeProjectId}/sensors`)}
-            style={{ fontSize: 11, color: t.textMuted, cursor: "pointer", fontWeight: 500 }}
-          >
-            View {"\u2192"}
-          </span>
+          <span onClick={() => activeProjectId && navigate(`/project/${activeProjectId}/sensors`)}
+            style={{ fontSize: 12, color: t.textSecondary, cursor: "pointer" }}>View &rarr;</span>
         </div>
       )}
 
-      {/* Metrics */}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
+      {/* Metrics row */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
         {metrics.map((m, i) => (
-          <div
-            key={i}
-            onMouseEnter={() => setHoveredMetric(i)}
-            onMouseLeave={() => setHoveredMetric(null)}
-            style={{
-              ...glassCard({
-                padding: "18px 18px 16px",
-                background: `linear-gradient(135deg, ${m.glow}, ${t.bgCard})`,
-                transform: hoveredMetric === i ? "translateY(-1px)" : "none",
-                border: `1px solid ${hoveredMetric === i ? t.glassBorderHover : t.glassBorder}`,
-              }),
-              position: "relative",
-              overflow: "hidden",
-            }}
-          >
-            {/* Top accent line */}
-            <div style={{
-              position: "absolute", top: 0, left: 20, right: 20, height: 2,
-              background: `linear-gradient(90deg, ${m.accentLine}40, transparent)`,
-              borderRadius: "0 0 2px 2px",
-            }} />
-            <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", color: t.textMuted, marginBottom: 12, textTransform: "uppercase" }}>{m.label}</div>
-            <div style={{ fontSize: 30, fontWeight: 700, color: m.color, letterSpacing: "-0.02em", lineHeight: 1 }}>{m.value}</div>
-            <div style={{ fontSize: 11, color: t.textSecondary, marginTop: 10 }}>{m.sub}</div>
+          <div key={i} style={glass({ padding: "16px 18px" })}>
+            <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 8, fontWeight: 500 }}>{m.label}</div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: m.color, letterSpacing: "-0.5px", lineHeight: 1 }}>{m.value}</div>
+            <div style={{ fontSize: 12, color: t.textMuted, marginTop: 8 }}>{m.sub}</div>
           </div>
         ))}
       </div>
 
-      {/* Cost trajectory */}
+      {/* Cost trajectory — using Recharts for proper responsive chart */}
       {costData.length > 1 && (
-        <div style={glassCard({ padding: "20px 22px", marginBottom: 24 })}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", color: t.textMuted, textTransform: "uppercase" }}>Cost Trajectory</div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: t.textSecondary, marginTop: 4 }}>{activeProject?.name || "Project"}</div>
-            </div>
-          </div>
-          <svg width="100%" height="160" viewBox="0 0 500 160" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id={`cg-${t.mode}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={t.neonRed} stopOpacity="0.2" />
-                <stop offset="50%" stopColor={t.neonAmber} stopOpacity="0.05" />
-                <stop offset="100%" stopColor={t.neonGreen} stopOpacity="0" />
-              </linearGradient>
-              <linearGradient id={`line-${t.mode}`} x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor={t.neonGreen} />
-                <stop offset="50%" stopColor={t.neonAmber} />
-                <stop offset="100%" stopColor={t.neonRed} />
-              </linearGradient>
-            </defs>
-            {[0.25, 0.5, 0.75].map(y => (
-              <line key={y} x1="0" y1={10 + y * 130} x2="500" y2={10 + y * 130} stroke={t.chartGrid} strokeWidth="1" />
-            ))}
-            {(() => {
-              const maxCost = Math.max(...costData.map(d => d.cost), budget) * 1.1;
-              const scaleX = (i: number) => i / (costData.length - 1) * 500;
-              const scaleY = (v: number) => 140 - (v / maxCost) * 130;
-              const budgetY = scaleY(budget);
-              const points = costData.map((d, i) => `${scaleX(i)},${scaleY(d.cost)}`).join(" ");
-              const areaPath = `M${points} L500,140 L0,140 Z`;
+        <div style={glass({ padding: "18px 20px", marginBottom: 20 })}>
+          <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 4, fontWeight: 500 }}>Cost Trajectory</div>
+          <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 16 }}>{activeProject?.name}</div>
+          <div style={{ width: "100%", height: 180, position: "relative" }}>
+            <svg width="100%" height="100%" viewBox={`0 0 ${Math.max(costData.length * 40, 400)} 180`} preserveAspectRatio="xMidYMid meet">
+              {(() => {
+                const w = Math.max(costData.length * 40, 400);
+                const pad = { t: 20, r: 60, b: 30, l: 10 };
+                const cw = w - pad.l - pad.r;
+                const ch = 180 - pad.t - pad.b;
+                const maxCost = Math.max(...costData.map(d => d.cost), budget) * 1.15;
+                const sx = (i: number) => pad.l + (i / (costData.length - 1)) * cw;
+                const sy = (v: number) => pad.t + ch - (v / maxCost) * ch;
+                const budgetY = sy(budget);
+                const pts = costData.map((d, i) => `${sx(i)},${sy(d.cost)}`).join(" ");
 
-              return (
-                <>
-                  <line x1="0" y1={budgetY} x2="500" y2={budgetY} stroke={t.textMuted} strokeWidth="1" strokeDasharray="6,4" opacity="0.4" />
-                  <text x="495" y={budgetY - 6} textAnchor="end" fontSize="9" fill={t.textMuted}>Budget</text>
-                  <path d={areaPath} fill={`url(#cg-${t.mode})`} />
-                  <polyline points={points} fill="none" stroke={`url(#line-${t.mode})`} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  {costData.map((d, i) => (
-                    <circle key={i} cx={scaleX(i)} cy={scaleY(d.cost)} r={5} fill={t.bg} stroke={d.cost > budget ? t.neonRed : d.cost > budget * 0.7 ? t.neonAmber : t.neonGreen} strokeWidth={2} />
-                  ))}
-                  {costData.length > 0 && (
-                    <>
-                      <circle cx={scaleX(costData.length - 1)} cy={scaleY(costData[costData.length - 1].cost)} r={6} fill={t.neonRed} style={{ filter: `drop-shadow(0 0 8px ${t.neonRed}80)` }} />
-                      <text x={scaleX(costData.length - 1) - 8} y={scaleY(costData[costData.length - 1].cost) - 12} textAnchor="end" fontSize="12" fill={t.neonRed} fontWeight="600">
+                return (
+                  <>
+                    {/* Grid lines */}
+                    {[0, 0.25, 0.5, 0.75, 1].map(p => (
+                      <line key={p} x1={pad.l} y1={pad.t + ch * (1 - p)} x2={w - pad.r} y2={pad.t + ch * (1 - p)} stroke={t.chartGrid} strokeWidth="0.5" />
+                    ))}
+                    {/* Budget line */}
+                    <line x1={pad.l} y1={budgetY} x2={w - pad.r} y2={budgetY} stroke={t.textMuted} strokeWidth="1" strokeDasharray="4,4" />
+                    <text x={w - pad.r + 6} y={budgetY + 3} fontSize="10" fill={t.textMuted} fontFamily="inherit">Budget</text>
+                    {/* Area fill */}
+                    <polygon points={`${pts} ${sx(costData.length - 1)},${pad.t + ch} ${sx(0)},${pad.t + ch}`} fill={t.accent} opacity="0.06" />
+                    {/* Line */}
+                    <polyline points={pts} fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    {/* Dots */}
+                    {costData.map((d, i) => (
+                      <circle key={i} cx={sx(i)} cy={sy(d.cost)} r={3}
+                        fill={d.cost > budget ? t.neonRed : t.accent}
+                        stroke={t.mode === "dark" ? "#1C1C1E" : "#F2F2F7"} strokeWidth="1.5" />
+                    ))}
+                    {/* End label */}
+                    {costData.length > 0 && (
+                      <text x={sx(costData.length - 1)} y={sy(costData[costData.length - 1].cost) - 10}
+                        textAnchor="end" fontSize="12" fill={costData[costData.length - 1].cost > budget ? t.neonRed : t.accent} fontWeight="600" fontFamily="inherit">
                         {formatCurrency(costData[costData.length - 1].cost)}
                       </text>
-                    </>
-                  )}
-                </>
-              );
-            })()}
-          </svg>
+                    )}
+                  </>
+                );
+              })()}
+            </svg>
+          </div>
         </div>
       )}
 
-      {/* Projects + Sensors/Activity grid */}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 320px", gap: 16 }}>
-        {/* Project cards */}
+      {/* Projects + Sidebar */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 300px", gap: 16 }}>
+        {/* Projects */}
         <div>
-          <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", color: t.textMuted, textTransform: "uppercase", marginBottom: 10 }}>Projects</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 10, fontWeight: 500 }}>Projects</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {projects.map((p, i) => {
               const pct = p.budget > 0 ? ((p.spent - p.budget) / p.budget) * 100 : 0;
               const isHovered = hoveredProject === i;
               return (
-                <div
-                  key={p.id}
-                  role="button"
-                  tabIndex={0}
+                <div key={p.id} role="button" tabIndex={0}
                   onMouseEnter={() => setHoveredProject(i)}
                   onMouseLeave={() => setHoveredProject(null)}
                   onClick={() => { setActiveProject(p.id); navigate(`/project/${p.id}/timeline`); }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { setActiveProject(p.id); navigate(`/project/${p.id}/timeline`); } }}
-                  style={glassCard({
-                    padding: "20px 22px", cursor: "pointer",
+                  onKeyDown={(e) => { if (e.key === "Enter") { setActiveProject(p.id); navigate(`/project/${p.id}/timeline`); } }}
+                  style={glass({
+                    padding: "16px 18px", cursor: "pointer",
                     background: isHovered ? t.bgCardHover : t.bgCard,
-                    border: `1px solid ${isHovered ? t.glassBorderHover : t.glassBorder}`,
-                    transform: isHovered ? "translateY(-2px)" : "none",
-                    boxShadow: isHovered ? `${t.glassShadow}, 0 12px 40px rgba(0,0,0,0.15)` : t.glassShadow,
-                  })}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, letterSpacing: "-0.1px" }}>{p.name}</div>
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <Badge text={p.risk_level.toUpperCase()} color={riskColor(p.risk_level)} bg={riskBg(p.risk_level)} />
-                    </div>
+                    border: `0.5px solid ${isHovered ? t.glassBorderHover : t.glassBorder}`,
+                    transform: isHovered ? "translateY(-1px)" : "none",
+                  })}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary }}>{p.name}</span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 500, padding: "2px 8px", borderRadius: 6,
+                      color: riskColor(p.risk_level),
+                      background: p.risk_level === "critical" || p.risk_level === "high" ? t.neonRedDim : p.risk_level === "medium" ? t.neonAmberDim : t.neonGreenDim,
+                    }}>{p.risk_level}</span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                    <span style={{ fontSize: 12, color: t.textSecondary }}>{formatCurrency(p.budget)}</span>
-                    <span style={{ color: t.textMuted, fontSize: 11 }}>{"\u2192"}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, color: t.textSecondary }}>{formatCurrency(p.budget)}</span>
+                    <span style={{ color: t.textMuted }}>&rarr;</span>
                     <span style={{ fontSize: 14, fontWeight: 600, color: pct > 15 ? t.neonRed : t.textPrimary }}>{formatCurrency(p.spent)}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: pct > 15 ? t.neonRed : pct > 5 ? t.neonAmber : t.neonGreen }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: pct > 15 ? t.neonRed : pct > 5 ? t.neonAmber : t.neonGreen }}>
                       {pct >= 0 ? "+" : ""}{pct.toFixed(0)}%
                     </span>
                   </div>
-                  {/* Budget drift bar */}
-                  <div style={{ height: 3, background: t.divider, borderRadius: 2, overflow: "hidden", marginBottom: 12 }}>
+                  <div style={{ height: 3, background: t.divider, borderRadius: 2, overflow: "hidden" }}>
                     <div style={{
                       height: "100%", borderRadius: 2,
-                      width: `${Math.min(Math.abs(pct) / 70 * 100, 100)}%`,
-                      background: pct > 15 ? `linear-gradient(90deg, ${t.neonAmber}, ${t.neonRed})` : pct > 5 ? t.neonAmber : t.neonGreen,
-                      boxShadow: `0 0 8px ${pct > 15 ? t.neonRed + "40" : t.neonGreen + "40"}`,
-                      transition: "width 0.6s ease",
+                      width: `${Math.min(Math.abs(pct) / 50 * 100, 100)}%`,
+                      background: pct > 15 ? t.neonRed : pct > 5 ? t.neonAmber : t.neonGreen,
+                      transition: "width 0.5s ease",
                     }} />
                   </div>
-                  <div style={{ fontSize: 11, color: t.textMuted }}>
-                    <span style={{ color: t.textSecondary }}>{p.description.slice(0, 70)}</span>
-                  </div>
+                  <p style={{ fontSize: 12, color: t.textMuted, marginTop: 8 }}>{p.description.slice(0, 80)}</p>
                 </div>
               );
             })}
@@ -353,27 +275,22 @@ export default function DashboardPage() {
         </div>
 
         {/* Right column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* Sensor mini cards */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Sensors */}
           <div>
-            <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", color: t.textMuted, textTransform: "uppercase", marginBottom: 12 }}>Sensors</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 10, fontWeight: 500 }}>Live Sensors</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {sensorData.map((s, i) => (
-                <div key={i} style={glassCard({
-                  padding: "14px 16px",
-                  border: `1px solid ${s.anom ? t.neonRed + "30" : t.glassBorder}`,
-                  boxShadow: s.anom ? `0 0 20px ${t.neonRed}10, ${t.glassInnerGlow}` : `${t.glassShadow}, ${t.glassInnerGlow}`,
-                })}>
-                  <div style={{ fontSize: 8, fontWeight: 600, color: t.textMuted, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>{s.name}</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: s.anom ? t.neonRed : t.textPrimary, lineHeight: 1, letterSpacing: "-0.5px" }}>{s.val.toLocaleString()}</div>
-                  <div style={{ fontSize: 9, color: t.textMuted, marginTop: 3 }}>{s.unit}</div>
-                  <div style={{ marginTop: 10, height: 3, background: t.divider, borderRadius: 2, overflow: "hidden" }}>
+                <div key={i} style={glass({ padding: "12px 14px" })}>
+                  <div style={{ fontSize: 11, color: t.textSecondary, marginBottom: 6, fontWeight: 500 }}>{s.name}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: s.anom ? t.neonRed : t.textPrimary, lineHeight: 1 }}>{s.val.toLocaleString(undefined, { maximumFractionDigits: 1 })}</div>
+                  <div style={{ fontSize: 10, color: t.textMuted, marginTop: 2 }}>{s.unit}</div>
+                  <div style={{ marginTop: 8, height: 2, background: t.divider, borderRadius: 1, overflow: "hidden" }}>
                     <div style={{
-                      height: "100%", borderRadius: 2,
+                      height: "100%", borderRadius: 1,
                       width: `${Math.min(s.val / s.thresh * 100, 100)}%`,
                       background: s.anom ? t.neonRed : s.val / s.thresh > 0.85 ? t.neonAmber : t.neonGreen,
-                      boxShadow: s.anom ? `0 0 8px ${t.neonRed}60` : "none",
-                      transition: "width 0.6s ease",
+                      transition: "width 0.5s ease",
                     }} />
                   </div>
                 </div>
@@ -381,35 +298,24 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Activity feed */}
+          {/* Activity */}
           <div>
-            <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", color: t.textMuted, textTransform: "uppercase", marginBottom: 12 }}>Activity</div>
+            <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 10, fontWeight: 500 }}>Recent Activity</div>
             {decisions.length === 0 ? (
-              <div style={glassCard({ padding: "24px 18px", textAlign: "center" })}>
-                <p style={{ fontSize: 12, color: t.textMuted }}>No decisions recorded yet.</p>
+              <div style={glass({ padding: "20px 16px", textAlign: "center" })}>
+                <p style={{ fontSize: 13, color: t.textMuted }}>No activity yet</p>
               </div>
             ) : (
-              <div style={glassCard({ padding: "16px 18px" })}>
-                {decisions.slice(0, 6).map((d, i) => (
+              <div style={glass({ padding: "12px 14px" })}>
+                {decisions.slice(0, 5).map((d, i) => (
                   <div key={d.id} style={{
-                    padding: "12px 0",
-                    borderBottom: i < Math.min(decisions.length, 6) - 1 ? `1px solid ${t.divider}` : "none",
-                    cursor: "pointer",
+                    padding: "10px 0",
+                    borderBottom: i < Math.min(decisions.length, 5) - 1 ? `0.5px solid ${t.divider}` : "none",
                   }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                      <span style={{
-                        color: actColor[d.decision_type] || t.accent, fontSize: 12, marginTop: 2,
-                        textShadow: `0 0 8px ${(actColor[d.decision_type] || t.accent)}30`,
-                      }}>
-                        {actIcon[d.decision_type] || "\u25CB"}
-                      </span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, color: t.textSecondary, lineHeight: 1.5, fontWeight: 500 }}>{d.title}</div>
-                        <div style={{ fontSize: 10, color: t.textMuted, marginTop: 3 }}>
-                          {d.cost_impact !== 0 ? `${d.cost_impact > 0 ? "+" : ""}${formatCurrency(d.cost_impact)}` : d.decision_type.replace("_", " ")}
-                        </div>
-                      </div>
-                      <span style={{ fontSize: 9, color: t.textMuted, flexShrink: 0, fontWeight: 500 }}>#{d.sequence_number}</span>
+                    <div style={{ fontSize: 13, color: t.textPrimary, fontWeight: 500, marginBottom: 2 }}>{d.title}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: t.textMuted }}>
+                      <span>{d.cost_impact !== 0 ? `${d.cost_impact > 0 ? "+" : ""}${formatCurrency(d.cost_impact)}` : d.decision_type.replace(/_/g, " ")}</span>
+                      <span>#{d.sequence_number}</span>
                     </div>
                   </div>
                 ))}
@@ -418,42 +324,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
-}
-
-// Shared helpers
-function glassCardStyle(t: any): React.CSSProperties {
-  return {
-    background: t.bgCard,
-    backdropFilter: "blur(40px) saturate(180%)",
-    WebkitBackdropFilter: "blur(40px) saturate(180%)",
-    border: `1px solid ${t.glassBorder}`,
-    borderRadius: 16,
-    boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
-    transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
-  };
-}
-
-function primaryBtnStyle(t: any): React.CSSProperties {
-  return {
-    padding: "10px 24px",
-    background: t.accent,
-    border: "none",
-    borderRadius: 10,
-    color: "#FFF",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-    fontFamily: "inherit",
-    boxShadow: t.btnShadow,
-  };
 }

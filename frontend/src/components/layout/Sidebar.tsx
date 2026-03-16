@@ -97,11 +97,11 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
           borderBottom: `0.5px solid ${t.divider}`,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <img
               src={t.mode === "dark" ? "/logo-dark.png" : "/logo-light.png"}
               alt="InfraTrace"
-              style={{ height: 34, width: "auto", objectFit: "contain" }}
+              style={{ height: 42, width: "auto", objectFit: "contain" }}
             />
           </div>
           {isMobile && (
