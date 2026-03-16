@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+from app.core.rate_limit import RateLimitMiddleware
 
 logging.basicConfig(
     level=logging.DEBUG if settings.ENVIRONMENT == "development" else logging.INFO,
@@ -38,17 +39,19 @@ app = FastAPI(
     redoc_url="/redoc" if settings.ENVIRONMENT == "development" else None,
 )
 
-origins = [settings.FRONTEND_URL]
+origins = [o.rstrip("/") for o in [settings.FRONTEND_URL] if o]
 if settings.ENVIRONMENT == "development":
     origins.extend(["http://localhost:5173", "http://127.0.0.1:5173"])
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=origins if origins else ["*"],
+    allow_credentials=bool(origins),
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(RateLimitMiddleware, limit=100, window=60)
 
 
 from app.api import auth as auth_router

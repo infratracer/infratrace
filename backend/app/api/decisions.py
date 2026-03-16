@@ -3,7 +3,7 @@ import uuid
 from decimal import Decimal
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +20,7 @@ from app.schemas.decision import (
     TimelineResponse,
 )
 from app.services.audit_service import log_action
+from app.services.blockchain import anchor_decision
 from app.services.hash_chain import (
     acquire_project_lock,
     compute_hash,
@@ -40,6 +41,7 @@ router = APIRouter()
 async def create_decision(
     project_id: uuid.UUID,
     body: DecisionCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_roles("admin", "project_manager")),
 ) -> DecisionResponse:
@@ -118,6 +120,18 @@ async def create_decision(
         project_id,
         record_hash[:16],
     )
+
+    # Anchor to Polygon Amoy in background (non-blocking)
+    _decision_id = decision.id
+    _seq = sequence_number
+    _hash = record_hash
+
+    async def _anchor_bg() -> None:
+        from app.database import async_session
+        async with async_session() as bg_db:
+            await anchor_decision(bg_db, _decision_id, project_id, _seq, _hash)
+
+    background_tasks.add_task(_anchor_bg)
 
     return DecisionResponse(
         id=decision.id,
