@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     # AI
     HF_API_TOKEN: str = ""
     HF_MODEL_ID: str = ""
+    OPENROUTER_API_KEY: str = ""
 
     # App
     FRONTEND_URL: str = "http://localhost:5173"

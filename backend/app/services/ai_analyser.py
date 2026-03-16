@@ -15,22 +15,36 @@ from app.models.sensor import SensorReading
 
 logger = logging.getLogger(__name__)
 
-PROMPT_TEMPLATE = """[INST] Analyse the following infrastructure decision chain for risk patterns.
+# OpenRouter free models — rotate on rate limit
+OPENROUTER_MODELS = [
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "mistralai/mistral-small-3.1-24b-instruct:free",
+    "google/gemma-3-27b-it:free",
+    "qwen/qwen3-4b:free",
+]
 
-Project: {name}
+SYSTEM_PROMPT = """You are an infrastructure project risk analyst. Analyse the project data and identify risk patterns.
+
+You MUST respond with valid JSON only — no markdown, no explanation outside JSON.
+
+JSON format:
+{"patterns": [{"type": "scope_creep|cost_anomaly|assumption_drift|approval_pattern|sensor_contradiction|schedule_risk", "severity": "info|warning|critical", "confidence": 0.0-1.0, "affected_decisions": [sequence_numbers], "explanation": "clear 1-2 sentence explanation"}], "overall_risk_score": 0-100, "summary": "1 sentence overall assessment"}"""
+
+USER_PROMPT = """Project: {name}
 Original Budget: A${budget}
 Current Budget: A${current}
-Decisions: {decisions_json}
-Assumptions: {assumptions_json}
-Sensor Readings: {sensors_json}
+Budget Drift: {drift}%
 
-Identify patterns: assumption_drift, cost_anomaly, approval_pattern, scope_creep, sensor_contradiction, risk_acceptance_cascade.
+Decisions ({dec_count} total):
+{decisions_json}
 
-Respond ONLY with JSON:
-{{"patterns": [{{"type": "...", "severity": "info|warning|critical", "confidence": 0.0-1.0, "affected_decisions": [seq_numbers], "explanation": "..."}}], "overall_risk_score": 0-100, "summary": "..."}}
-[/INST]"""
+Assumptions ({assum_count} total):
+{assumptions_json}
 
-MAX_RETRIES = 3
+Recent Sensor Readings ({sensor_count} readings, {anomaly_count} anomalies):
+{sensors_json}
+
+Identify all risk patterns. Be specific about which decisions are affected."""
 
 
 async def analyse_project(
@@ -71,7 +85,7 @@ async def analyse_project(
             "title": d.title,
             "cost_impact": float(d.cost_impact) if d.cost_impact else 0,
             "risk": d.risk_level,
-            "date": d.created_at.isoformat(),
+            "approved_by": d.approved_by,
         }
         for d in decisions
     ]
@@ -86,76 +100,111 @@ async def analyse_project(
         for a in assumptions
     ]
 
+    anomalies = [r for r in sensor_readings if r.anomaly_flag]
     sensors_data = [
         {
             "type": s.sensor_type,
             "value": float(s.value),
             "anomaly": s.anomaly_flag,
-            "date": s.created_at.isoformat(),
         }
         for s in sensor_readings[:20]
     ]
 
-    prompt = PROMPT_TEMPLATE.format(
+    budget = float(project.original_budget)
+    current = float(project.current_budget)
+    drift = round(((current - budget) / budget * 100), 1) if budget > 0 else 0
+
+    user_prompt = USER_PROMPT.format(
         name=project.name,
-        budget=f"{float(project.original_budget):,.0f}",
-        current=f"{float(project.current_budget):,.0f}",
-        decisions_json=json.dumps(decisions_data),
-        assumptions_json=json.dumps(assumptions_data),
-        sensors_json=json.dumps(sensors_data),
+        budget=f"{budget:,.0f}",
+        current=f"{current:,.0f}",
+        drift=drift,
+        dec_count=len(decisions),
+        decisions_json=json.dumps(decisions_data, indent=2),
+        assum_count=len(assumptions),
+        assumptions_json=json.dumps(assumptions_data, indent=2),
+        sensor_count=len(sensor_readings),
+        anomaly_count=len(anomalies),
+        sensors_json=json.dumps(sensors_data, indent=2),
     )
 
-    if not settings.HF_API_TOKEN or not settings.HF_MODEL_ID:
-        logger.info("HuggingFace credentials not configured, using rule-based analysis")
-        return await _rule_based_analysis(db, project_id, decisions, assumptions, sensor_readings)
+    # Try OpenRouter first
+    if settings.OPENROUTER_API_KEY:
+        ai_result = await _call_openrouter(db, project_id, user_prompt)
+        if ai_result is not None:
+            return ai_result
+        logger.warning("OpenRouter failed, falling back to rule-based analysis")
 
-    for attempt in range(MAX_RETRIES):
+    # Fallback to rule-based
+    return await _rule_based_analysis(db, project_id, decisions, assumptions, sensor_readings)
+
+
+async def _call_openrouter(
+    db: AsyncSession,
+    project_id: uuid.UUID,
+    user_prompt: str,
+) -> list[AIAnalysisResult] | None:
+    """Call OpenRouter API with model rotation on failure."""
+    for model in OPENROUTER_MODELS:
         try:
-            async with httpx.AsyncClient(timeout=60) as client:
+            async with httpx.AsyncClient(timeout=45) as client:
                 response = await client.post(
-                    f"https://api-inference.huggingface.co/models/{settings.HF_MODEL_ID}",
-                    headers={"Authorization": f"Bearer {settings.HF_API_TOKEN}"},
-                    json={"inputs": prompt, "parameters": {"max_new_tokens": 1000}},
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": settings.FRONTEND_URL,
+                        "X-Title": "InfraTrace",
+                    },
+                    json={
+                        "model": model,
+                        "messages": [
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        "temperature": 0.3,
+                        "max_tokens": 1500,
+                    },
                 )
 
                 if response.status_code == 429:
-                    wait = 2 ** (attempt + 1)
-                    logger.warning("HuggingFace rate limited, retrying in %ds", wait)
-                    import asyncio
-                    await asyncio.sleep(wait)
+                    logger.warning("Rate limited on %s, trying next model", model)
                     continue
 
                 response.raise_for_status()
-                result_data = response.json()
+                data = response.json()
 
-                text_output = ""
-                if isinstance(result_data, list) and result_data:
-                    text_output = result_data[0].get("generated_text", "")
-                elif isinstance(result_data, dict):
-                    text_output = result_data.get("generated_text", "")
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                if not content:
+                    logger.warning("Empty response from %s", model)
+                    continue
 
-                json_start = text_output.find("{")
-                json_end = text_output.rfind("}") + 1
+                # Extract JSON from response
+                json_start = content.find("{")
+                json_end = content.rfind("}") + 1
                 if json_start >= 0 and json_end > json_start:
-                    parsed = json.loads(text_output[json_start:json_end])
-                    return await _save_findings(db, project_id, parsed)
+                    parsed = json.loads(content[json_start:json_end])
+                    logger.info("AI analysis successful via %s", model)
+                    return await _save_findings(db, project_id, parsed, model)
 
-                logger.warning("Could not parse AI response: %s", text_output[:200])
-                return await _rule_based_analysis(db, project_id, decisions, assumptions, sensor_readings)
+                logger.warning("Could not parse JSON from %s: %s", model, content[:200])
+                continue
 
         except httpx.HTTPStatusError as e:
-            logger.error("HuggingFace API error (attempt %d): %s", attempt + 1, e)
+            logger.error("OpenRouter HTTP error on %s: %s", model, e)
+        except json.JSONDecodeError as e:
+            logger.error("JSON parse error from %s: %s", model, e)
         except Exception as e:
-            logger.error("AI analysis error (attempt %d): %s", attempt + 1, e)
+            logger.error("OpenRouter error on %s: %s", model, e)
 
-    logger.error("AI analysis failed after %d retries, falling back to rule-based", MAX_RETRIES)
-    return await _rule_based_analysis(db, project_id, decisions, assumptions, sensor_readings)
+    return None
 
 
 async def _save_findings(
     db: AsyncSession,
     project_id: uuid.UUID,
     parsed: dict,
+    model_version: str,
 ) -> list[AIAnalysisResult]:
     findings = []
     patterns = parsed.get("patterns", [])
@@ -169,7 +218,7 @@ async def _save_findings(
             finding=pattern.get("explanation", "No explanation provided"),
             related_decisions=pattern.get("affected_decisions"),
             confidence_score=confidence,
-            model_version=settings.HF_MODEL_ID or "rule-based-v1.0",
+            model_version=model_version,
         )
         db.add(finding)
         findings.append(finding)
@@ -185,7 +234,7 @@ async def _rule_based_analysis(
     assumptions: list,
     sensor_readings: list,
 ) -> list[AIAnalysisResult]:
-    """Simple rule-based analysis fallback when HuggingFace is unavailable."""
+    """Rule-based analysis fallback when AI is unavailable."""
     findings = []
 
     scope_changes = [d for d in decisions if d.decision_type == "scope_change"]
@@ -258,6 +307,22 @@ async def _rule_based_analysis(
             )
             db.add(finding)
             findings.append(finding)
+
+    schedule_changes = [d for d in decisions if d.decision_type == "schedule_change"]
+    if len(schedule_changes) >= 3:
+        affected = [d.sequence_number for d in schedule_changes]
+        finding = AIAnalysisResult(
+            project_id=project_id,
+            analysis_type="schedule_risk",
+            severity="warning",
+            finding=f"Detected {len(schedule_changes)} schedule modifications. "
+                    f"Frequent timeline adjustments indicate potential delivery risk.",
+            related_decisions=affected,
+            confidence_score=0.72,
+            model_version="rule-based-v1.0",
+        )
+        db.add(finding)
+        findings.append(finding)
 
     await db.flush()
     return findings
