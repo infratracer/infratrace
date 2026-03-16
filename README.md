@@ -61,8 +61,69 @@ graph TB
 
 ---
 
+## What is InfraTrace? (The Non-Technical Version)
+
+### The problem, in plain terms
+
+When governments and organizations build infrastructure — roads, bridges, hospitals, power grids, water systems — billions of dollars move through long chains of decisions. Someone picks a contractor. Someone approves a budget increase. Someone changes the timeline. Someone accepts a risk.
+
+These decisions shape whether a project comes in on budget or blows past it by 200%. Whether materials meet safety standards or don't. Whether public money goes where it should or disappears into someone's pocket.
+
+Today, the records of these decisions live in spreadsheets, email threads, meeting minutes, and filing cabinets. They can be edited after the fact. They can be deleted. They can be "lost." By the time an auditor shows up — often years later — the trail is cold, the story has been rewritten, and accountability is impossible.
+
+This isn't a hypothetical problem. The International Monetary Fund estimates a roughly 30% efficiency gap between what countries spend on infrastructure and what they actually get. Globally, that's trillions of dollars lost every year to a combination of corruption, poor decisions, and zero accountability.
+
+### What InfraTrace actually does
+
+InfraTrace is a record-keeping system for infrastructure decisions — but one that nobody can tamper with.
+
+Think of it like a flight recorder (black box) for infrastructure projects. Every time someone makes a decision — approves a contract, changes a budget, modifies a timeline, accepts a risk — InfraTrace captures it: who made the decision, when, why, what information was available at the time, and what alternatives were considered.
+
+Once a decision is recorded, it cannot be changed. Not by the person who made it. Not by their manager. Not by the system administrator. Not by anyone. The record is cryptographically sealed and independently verifiable.
+
+If someone tries to alter a past record, the system detects it immediately and alerts every stakeholder.
+
+### Who sees what
+
+Different people need different views of the same project data. InfraTrace gives each stakeholder exactly what they need:
+
+| Who | What they see | Why it matters |
+|-----|--------------|----------------|
+| **Project managers** | Full decision timeline, budget tracking, sensor alerts | Day-to-day project oversight |
+| **Government officials** | Compliance dashboards, approval chains, audit reports | Regulatory accountability |
+| **Auditors** | Verification tools, hash chain integrity checks, blockchain proofs | Independent confirmation that records haven't been altered |
+| **Investors & lenders** | Risk scores, decision quality metrics, anomaly alerts | Protecting capital and monitoring project health |
+| **Citizens & media** | Public timeline, plain-language summaries, budget breakdowns | Knowing where tax money goes |
+| **Contractors** | Their own submissions, milestone tracking, payment status | Fair process, documented delivery |
+
+Everyone works from the same verified truth. Nobody gets a special version of events.
+
+### Three technologies, explained simply
+
+InfraTrace combines three technologies. Here's what each one does in plain language:
+
+**Blockchain** (Polygon network)
+> Every decision record gets a digital fingerprint. That fingerprint is published to a public ledger that nobody controls — like stamping a document at a notary office, except the notary is a global computer network that runs 24/7 and can't be bribed or shut down. Anyone, anywhere, at any time can verify that a record is genuine and hasn't been changed.
+
+**AI Analysis** (powered by large language models)
+> The system watches the full stream of decisions and flags things that look wrong — a cost that doubled overnight with no explanation, a single person approving every decision with no oversight, budget assumptions that contradict what sensors are reporting on the ground. It doesn't make judgments. It raises questions that humans should be asking.
+
+**IoT Sensor Monitoring** (real-time data feeds)
+> Infrastructure projects make assumptions: "Steel will cost $1,100 per tonne." "Delivery will take 14 days." "Rainfall won't exceed 30mm." InfraTrace connects to real-world data streams — commodity prices, weather stations, delivery tracking — and watches whether reality matches those assumptions. When it doesn't, the system alerts project managers before small problems become expensive ones.
+
+### What this means in practice
+
+A project manager logs a decision to change contractors mid-project. InfraTrace records it with their name, the timestamp, their justification, the supporting documents, and the budget impact. The record is hashed, chained to every previous decision, and anchored to the blockchain.
+
+Three months later, when costs have escalated and questions are being asked, nobody can claim the decision was never made, was made by someone else, or was justified differently than it actually was. The record is there, verified, and immutable.
+
+That's the core of InfraTrace. Everything else — the dashboards, the AI analysis, the sensor feeds, the PDF reports — exists to make this fundamental capability useful to real people doing real work on real projects.
+
+---
+
 ## Table of Contents
 
+- [What is InfraTrace?](#what-is-infratrace-the-non-technical-version)
 - [The Problem](#the-problem)
 - [Key Features](#key-features)
 - [System Architecture](#system-architecture)
