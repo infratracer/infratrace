@@ -40,9 +40,6 @@ app = FastAPI(
 )
 
 origins = [o.rstrip("/") for o in [settings.FRONTEND_URL] if o]
-# Always allow the production domain
-if "infratrace.xyz" not in (settings.FRONTEND_URL or ""):
-    origins.append("https://infratrace.xyz")
 if settings.ENVIRONMENT == "development":
     origins.extend(["http://localhost:5173", "http://127.0.0.1:5173"])
 
