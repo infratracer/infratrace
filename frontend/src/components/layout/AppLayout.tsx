@@ -46,14 +46,14 @@ export default function AppLayout() {
 
   return (
     <div style={{
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif",
       background: t.bg,
       backgroundImage: t.bgGradientMesh,
       color: t.textPrimary,
       minHeight: "100vh",
       display: "flex",
       position: "relative",
-      transition: "background 0.6s ease",
+      transition: "background 0.5s ease",
     }}>
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} isMobile={isMobile} />
 
@@ -65,7 +65,7 @@ export default function AppLayout() {
         />
         <div style={{
           flex: 1, overflow: "auto",
-          padding: isMobile ? "18px" : "28px 32px",
+          padding: isMobile ? "16px" : "24px 28px",
         }}>
           <ErrorBoundary>
             <Outlet />
@@ -75,21 +75,20 @@ export default function AppLayout() {
 
       <ToastContainer />
 
-      {/* Global liquid glass CSS */}
       <style>{`
         * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: ${t.glassBorder}; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: ${t.glassBorderHover}; }
+        ::-webkit-scrollbar-thumb { background: rgba(${t.mode === "dark" ? "255,255,255" : "0,0,0"}, 0.12); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(${t.mode === "dark" ? "255,255,255" : "0,0,0"}, 0.20); }
 
-        input::placeholder, textarea::placeholder { color: ${t.textMuted}; opacity: 0.7; }
-        select option { background: ${t.bg}; color: ${t.textPrimary}; }
+        input::placeholder, textarea::placeholder { color: ${t.textMuted}; }
+        select option { background: ${t.mode === "dark" ? "#1c1c1e" : "#fff"}; color: ${t.textPrimary}; }
       `}</style>
     </div>
   );

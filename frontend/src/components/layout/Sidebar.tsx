@@ -67,94 +67,93 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
           onClick={onClose}
           style={{
             position: "fixed", inset: 0,
-            background: "rgba(0,0,0,0.5)",
+            background: "rgba(0,0,0,0.35)",
             zIndex: 40,
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
           }}
         />
       )}
 
       <div style={{
-        width: open ? 224 : 0,
-        minWidth: open ? 224 : 0,
+        width: open ? 228 : 0,
+        minWidth: open ? 228 : 0,
         background: t.bgSidebar,
-        backdropFilter: "blur(48px) saturate(180%)",
-        WebkitBackdropFilter: "blur(48px) saturate(180%)",
-        borderRight: `1px solid ${t.divider}`,
+        backdropFilter: "blur(80px) saturate(180%)",
+        WebkitBackdropFilter: "blur(80px) saturate(180%)",
+        borderRight: `0.5px solid ${t.divider}`,
         display: "flex",
         flexDirection: "column",
-        transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: "all 0.38s cubic-bezier(0.25, 0.1, 0.25, 1)",
         overflow: "hidden",
         position: isMobile ? "fixed" : "relative",
         left: 0, top: 0, bottom: 0,
         zIndex: 50,
-        boxShadow: isMobile && open ? `12px 0 48px rgba(0,0,0,0.4)` : "none",
+        boxShadow: isMobile && open ? `0 0 60px rgba(0,0,0,0.25)` : "none",
       }}>
         {/* Logo */}
         <div style={{
-          padding: "22px 18px 18px",
-          borderBottom: `1px solid ${t.divider}`,
+          padding: "20px 18px 16px",
+          borderBottom: `0.5px solid ${t.divider}`,
           display: "flex", alignItems: "center", justifyContent: "space-between",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <img
               src={t.mode === "dark" ? "/logo-dark.png" : "/logo-light.png"}
               alt="InfraTrace"
-              style={{ height: 36, width: "auto", objectFit: "contain" }}
+              style={{ height: 34, width: "auto", objectFit: "contain" }}
             />
           </div>
           {isMobile && (
-            <button onClick={onClose} style={{ background: "none", border: "none", color: t.textMuted, fontSize: 18, cursor: "pointer", padding: 4 }}>{"\u2715"}</button>
+            <button onClick={onClose} style={{ background: "none", border: "none", color: t.textSecondary, fontSize: 18, cursor: "pointer", padding: 4 }}>{"\u2715"}</button>
           )}
         </div>
 
         {/* Project selector */}
-        <div style={{ padding: "14px 16px", borderBottom: `1px solid ${t.divider}` }}>
-          <div style={{ fontSize: 9, textTransform: "uppercase", letterSpacing: "0.14em", color: t.textMuted, marginBottom: 8, fontWeight: 600 }}>Active Project</div>
+        <div style={{ padding: "12px 14px", borderBottom: `0.5px solid ${t.divider}` }}>
+          <div style={{ fontSize: 11, letterSpacing: "0.01em", color: t.textSecondary, marginBottom: 6, fontWeight: 500 }}>Active Project</div>
           <div style={{
-            padding: "10px 13px",
+            padding: "8px 12px",
             background: t.bgCard,
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
-            borderRadius: 12,
-            border: `1px solid ${t.glassBorder}`,
-            fontSize: 12, color: t.textPrimary, fontWeight: 500, whiteSpace: "nowrap",
+            backdropFilter: "blur(40px)",
+            WebkitBackdropFilter: "blur(40px)",
+            borderRadius: 10,
+            border: `0.5px solid ${t.glassBorder}`,
+            fontSize: 13, color: t.textPrimary, fontWeight: 500, whiteSpace: "nowrap",
             display: "flex", alignItems: "center", justifyContent: "space-between",
             cursor: "pointer",
-            transition: "border-color 0.25s, background 0.25s",
+            transition: "background 0.2s",
           }}>
             <span>{activeProject?.name || "Select project"}</span>
-            {activeProject && <span style={{ fontSize: 8, color: t.neonGreen, textShadow: `0 0 8px ${t.neonGreen}60` }}>{"\u25CF"}</span>}
+            {activeProject && <span style={{ fontSize: 6, color: t.neonGreen }}>{"\u25CF"}</span>}
           </div>
         </div>
 
         {/* Nav */}
-        <div style={{ padding: "10px 10px", flex: 1, overflowY: "auto" }}>
+        <div style={{ padding: "6px 8px", flex: 1, overflowY: "auto" }}>
           {navItems.map(n => {
             const isActive = page === n.id;
             return (
               <button key={n.id} onClick={() => handleNav(n.path)} aria-label={`Navigate to ${n.label}`}
                 style={{
                   display: "flex", alignItems: "center", gap: 10, width: "100%",
-                  padding: "9px 13px", marginBottom: 2, border: "none", borderRadius: 11,
-                  cursor: "pointer", fontSize: 12, fontWeight: isActive ? 600 : 500, textAlign: "left",
+                  padding: "8px 12px", marginBottom: 1, border: "none", borderRadius: 10,
+                  cursor: "pointer", fontSize: 13, fontWeight: isActive ? 600 : 400, textAlign: "left",
                   whiteSpace: "nowrap",
                   background: isActive ? t.sidebarActive : "transparent",
                   color: isActive ? t.textPrimary : t.textSecondary,
-                  transition: "all 0.25s ease",
+                  transition: "all 0.2s ease",
                   position: "relative",
                   fontFamily: "inherit",
                 }}>
                 {isActive && (
                   <div style={{
                     position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
-                    width: 3, height: 18, borderRadius: 2,
-                    background: `linear-gradient(180deg, ${t.accent}, ${t.teal})`,
-                    boxShadow: `0 0 10px ${t.accent}50`,
+                    width: 3, height: 16, borderRadius: 1.5,
+                    background: t.accent,
                   }} />
                 )}
-                <span style={{ fontSize: 14, width: 20, textAlign: "center", color: isActive ? t.accent : t.textMuted, transition: "color 0.25s" }}>{n.icon}</span>
+                <span style={{ fontSize: 14, width: 20, textAlign: "center", color: isActive ? t.accent : t.textMuted, transition: "color 0.2s" }}>{n.icon}</span>
                 {n.label}
               </button>
             );
@@ -163,21 +162,21 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
           {(isAdmin || isAuditor) && (
             <>
               <div style={{
-                fontSize: 9, textTransform: "uppercase", letterSpacing: "0.14em",
-                color: t.textMuted, margin: "22px 13px 8px", fontWeight: 600,
+                fontSize: 11, letterSpacing: "0.01em",
+                color: t.textMuted, margin: "16px 12px 6px", fontWeight: 500,
               }}>Admin</div>
               {adminItems.map(n => {
                 const isActive = page === n.id;
                 return (
-                  <button key={n.id} onClick={() => handleNav(n.path)}
+                  <button key={n.id} onClick={() => handleNav(n.path)} aria-label={`Navigate to ${n.label}`}
                     style={{
                       display: "flex", alignItems: "center", gap: 10, width: "100%",
-                      padding: "9px 13px", marginBottom: 2, border: "none", borderRadius: 11,
-                      cursor: "pointer", fontSize: 12, fontWeight: isActive ? 600 : 500, textAlign: "left",
+                      padding: "8px 12px", marginBottom: 1, border: "none", borderRadius: 10,
+                      cursor: "pointer", fontSize: 13, fontWeight: isActive ? 600 : 400, textAlign: "left",
                       whiteSpace: "nowrap",
                       background: isActive ? t.sidebarActive : "transparent",
                       color: isActive ? t.textPrimary : t.textSecondary,
-                      transition: "all 0.25s ease",
+                      transition: "all 0.2s ease",
                       fontFamily: "inherit",
                     }}>
                     <span style={{ fontSize: 14, width: 20, textAlign: "center", color: isActive ? t.accent : t.textMuted }}>{n.icon}</span>
@@ -192,22 +191,23 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
         {/* User */}
         {user && (
           <div style={{
-            padding: "16px 16px",
-            borderTop: `1px solid ${t.divider}`,
+            padding: "14px 14px",
+            borderTop: `0.5px solid ${t.divider}`,
             display: "flex", alignItems: "center", gap: 10,
           }}>
             <div style={{
               width: 30, height: 30, borderRadius: "50%",
-              background: `linear-gradient(135deg, ${t.accentDim}, ${t.tealDim})`,
-              border: `1px solid ${t.glassBorder}`,
+              background: t.bgCard,
+              border: `0.5px solid ${t.glassBorder}`,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 11, fontWeight: 600, color: t.accent,
+              backdropFilter: "blur(20px)",
             }}>
               {user.full_name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
             </div>
             <div style={{ whiteSpace: "nowrap" }}>
-              <div style={{ fontSize: 12, fontWeight: 500, color: t.textPrimary }}>{user.full_name}</div>
-              <div style={{ fontSize: 9, color: t.textMuted, fontWeight: 500 }}>{user.role.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: t.textPrimary }}>{user.full_name}</div>
+              <div style={{ fontSize: 11, color: t.textSecondary, fontWeight: 400 }}>{user.role.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}</div>
             </div>
           </div>
         )}

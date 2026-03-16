@@ -22,11 +22,11 @@ export default function TopBar({ title, onMenuClick, showMenu }: TopBarProps) {
 
   return (
     <div style={{
-      padding: "14px 28px",
-      borderBottom: `1px solid ${t.divider}`,
+      padding: "12px 24px",
+      borderBottom: `0.5px solid ${t.divider}`,
       background: t.topBarBg,
-      backdropFilter: "blur(32px) saturate(180%)",
-      WebkitBackdropFilter: "blur(32px) saturate(180%)",
+      backdropFilter: "blur(80px) saturate(180%)",
+      WebkitBackdropFilter: "blur(80px) saturate(180%)",
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
@@ -34,42 +34,39 @@ export default function TopBar({ title, onMenuClick, showMenu }: TopBarProps) {
       top: 0,
       zIndex: 30,
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {showMenu && (
           <button onClick={onMenuClick} aria-label="Open menu" style={{
             background: "none", border: "none",
             color: t.textSecondary, fontSize: 18, cursor: "pointer",
             padding: "4px 8px", borderRadius: 8,
-            transition: "color 0.25s",
+            transition: "color 0.2s",
           }}>{"\u2630"}</button>
         )}
         <h2 style={{
-          margin: 0, fontSize: 18, fontWeight: 600,
+          margin: 0, fontSize: 17, fontWeight: 600,
           color: t.textPrimary, letterSpacing: "-0.3px",
         }}>{title}</h2>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {/* Theme toggle */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {/* Theme toggle — iOS style pill */}
         <button onClick={toggle} aria-label="Toggle theme" style={{
-          width: 46, height: 26, borderRadius: 13,
-          border: `1px solid ${t.glassBorder}`,
+          width: 44, height: 24, borderRadius: 12,
+          border: `0.5px solid ${t.glassBorder}`,
           background: t.bgCard,
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           cursor: "pointer",
           position: "relative",
-          display: "flex", alignItems: "center", padding: "0 3px",
-          transition: "all 0.35s",
-          boxShadow: t.glassInnerGlow,
+          display: "flex", alignItems: "center", padding: "0 2px",
+          transition: "all 0.3s",
         }}>
           <div style={{
             width: 20, height: 20, borderRadius: "50%",
-            background: t.mode === "dark"
-              ? `linear-gradient(135deg, ${t.accent}, ${t.teal})`
-              : `linear-gradient(135deg, ${t.neonAmber}, #FF8800)`,
-            transform: t.mode === "dark" ? "translateX(0)" : "translateX(18px)",
-            transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-            boxShadow: `0 0 14px ${t.mode === "dark" ? t.accent + "40" : t.neonAmber + "40"}`,
+            background: t.mode === "dark" ? t.accent : "#FF9500",
+            transform: t.mode === "dark" ? "translateX(0)" : "translateX(20px)",
+            transition: "all 0.35s cubic-bezier(0.25, 0.1, 0.25, 1)",
+            boxShadow: `0 1px 4px rgba(0,0,0,0.2)`,
           }} />
         </button>
         {/* Logout */}
@@ -77,11 +74,11 @@ export default function TopBar({ title, onMenuClick, showMenu }: TopBarProps) {
           background: t.bgCard,
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
-          border: `1px solid ${t.glassBorder}`,
-          color: t.textSecondary, fontSize: 10, cursor: "pointer",
-          padding: "6px 14px", borderRadius: 10,
-          fontWeight: 600, letterSpacing: "0.04em",
-          transition: "all 0.25s",
+          border: `0.5px solid ${t.glassBorder}`,
+          color: t.textSecondary, fontSize: 11, cursor: "pointer",
+          padding: "6px 14px", borderRadius: 8,
+          fontWeight: 500,
+          transition: "all 0.2s",
           fontFamily: "inherit",
         }}>
           Logout

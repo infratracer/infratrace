@@ -37,7 +37,7 @@ export default function LoginPage() {
 
   return (
     <div style={{
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Inter', system-ui, sans-serif",
       background: t.bg,
       backgroundImage: t.bgGradientMesh,
       minHeight: "100vh",
@@ -96,26 +96,24 @@ export default function LoginPage() {
       {/* Login card — iOS Liquid Glass */}
       <div style={{
         width: "100%",
-        maxWidth: 400,
+        maxWidth: 380,
         background: t.mode === "dark"
-          ? "rgba(18, 28, 48, 0.35)"
-          : "rgba(255, 255, 255, 0.45)",
-        backdropFilter: "blur(80px) saturate(200%) brightness(1.05)",
-        WebkitBackdropFilter: "blur(80px) saturate(200%) brightness(1.05)",
-        border: `1px solid ${t.mode === "dark" ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.5)"}`,
-        borderRadius: 28,
-        boxShadow: t.mode === "dark"
-          ? "0 12px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05), inset 0 -1px 0 rgba(255,255,255,0.02)"
-          : "0 12px 48px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 0 rgba(255,255,255,0.4)",
-        padding: "48px 40px",
+          ? "rgba(44, 44, 46, 0.32)"
+          : "rgba(255, 255, 255, 0.42)",
+        backdropFilter: "blur(80px) saturate(180%)",
+        WebkitBackdropFilter: "blur(80px) saturate(180%)",
+        border: `0.5px solid ${t.glassBorder}`,
+        borderRadius: 22,
+        boxShadow: t.glassShadow,
+        padding: "44px 36px",
         position: "relative",
         zIndex: 1,
       }}>
         {/* Top specular highlight */}
         <div style={{
-          position: "absolute", top: 0, left: 20, right: 20, height: 1,
-          background: `linear-gradient(90deg, transparent, rgba(255,255,255,${t.mode === "dark" ? "0.08" : "0.5"}), transparent)`,
-          borderRadius: "28px 28px 0 0",
+          position: "absolute", top: 0, left: 16, right: 16, height: 0.5,
+          background: `linear-gradient(90deg, transparent, rgba(255,255,255,${t.mode === "dark" ? "0.06" : "0.4"}), transparent)`,
+          borderRadius: "22px 22px 0 0",
         }} />
 
         {/* Logo */}
