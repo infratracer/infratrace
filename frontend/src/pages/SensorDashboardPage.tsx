@@ -60,8 +60,8 @@ export default function SensorDashboardPage() {
   };
 
   const overline = {
-    fontSize: 9, fontWeight: 600, letterSpacing: "0.12em",
-    textTransform: "uppercase" as const, color: t.textMuted,
+    fontSize: 12, fontWeight: 500, letterSpacing: "0.01em",
+    color: t.textSecondary,
   };
 
   if (loading) {
@@ -171,7 +171,7 @@ export default function SensorDashboardPage() {
                   }}>!</span>
                 )}
               </div>
-              <p style={{ fontSize: 20, fontWeight: 700, marginBottom: 2, color: isAnomaly ? t.neonRed : t.textPrimary }}>{value.toFixed(1)}</p>
+              <p style={{ fontSize: 20, fontWeight: 700, marginBottom: 2, color: isAnomaly ? t.neonRed : t.textPrimary }}>{value >= 100 ? Math.round(value).toLocaleString() : value.toFixed(1)}</p>
               <p style={{ fontSize: 10, marginBottom: 8, color: t.textMuted }}>{cfg.unit}</p>
               <div style={{ width: "100%", height: 4, borderRadius: 2, background: t.bgInput, overflow: "hidden" }}>
                 <div style={{

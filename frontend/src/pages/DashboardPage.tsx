@@ -212,29 +212,56 @@ export default function DashboardPage() {
               {formatCurrency(costData[costData.length - 1].cost)}
             </div>
           </div>
-          <div style={{ width: "100%", height: 200 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={costData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                <defs>
-                  <linearGradient id="costGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={t.accent} stopOpacity={0.15} />
-                    <stop offset="100%" stopColor={t.accent} stopOpacity={0.01} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={t.chartGrid} vertical={false} />
-                <XAxis dataKey="seq" tick={{ fontSize: 11, fill: t.textMuted }} axisLine={false} tickLine={false} tickFormatter={(v) => `#${v}`} />
-                <YAxis tick={{ fontSize: 11, fill: t.textMuted }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1e6).toFixed(0)}M`} width={50} />
-                <Tooltip
-                  contentStyle={{ background: t.bgElevated, border: `0.5px solid ${t.glassBorder}`, borderRadius: 10, fontSize: 12, backdropFilter: "blur(20px)" }}
-                  labelStyle={{ color: t.textMuted }}
-                  formatter={(value: any) => [formatCurrency(Number(value)), "Cumulative Cost"]}
-                  labelFormatter={(label) => `Decision #${label}`}
-                />
-                <ReferenceLine y={budget} stroke={t.textMuted} strokeDasharray="4 4" label={{ value: `Budget ${formatCurrency(budget)}`, position: "right", fontSize: 10, fill: t.textMuted }} />
-                <Area type="monotone" dataKey="cost" stroke={t.accent} strokeWidth={2} fill="url(#costGrad)" dot={{ r: 3, fill: t.accent, stroke: "none" }} activeDot={{ r: 5, fill: t.accent, stroke: t.bg, strokeWidth: 2 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          {(() => {
+            const maxCost = Math.max(...costData.map(d => d.cost));
+            const budgetRatio = budget > 0 ? Math.min(budget / (maxCost * 1.15), 1) : 0.8;
+            // Green below 70% budget, amber at budget, red above
+            const greenStop = Math.max(0, 1 - budgetRatio * 0.7);
+            const amberStop = Math.max(0, 1 - budgetRatio);
+            return (
+              <div style={{ width: "100%", height: 200 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={costData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="costLineGrad" x1="0" y1="1" x2="0" y2="0">
+                        <stop offset="0%" stopColor={t.neonGreen} />
+                        <stop offset={`${greenStop * 100}%`} stopColor={t.neonGreen} />
+                        <stop offset={`${amberStop * 100}%`} stopColor={t.neonAmber} />
+                        <stop offset="100%" stopColor={t.neonRed} />
+                      </linearGradient>
+                      <linearGradient id="costAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={t.neonRed} stopOpacity={0.12} />
+                        <stop offset={`${amberStop * 100}%`} stopColor={t.neonAmber} stopOpacity={0.06} />
+                        <stop offset="100%" stopColor={t.neonGreen} stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={t.chartGrid} vertical={false} />
+                    <XAxis dataKey="seq" tick={{ fontSize: 11, fill: t.textMuted }} axisLine={false} tickLine={false} tickFormatter={(v) => `#${v}`} />
+                    <YAxis tick={{ fontSize: 11, fill: t.textMuted }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1e6).toFixed(0)}M`} width={55} />
+                    <Tooltip
+                      contentStyle={{ background: t.bgElevated, border: `0.5px solid ${t.glassBorder}`, borderRadius: 10, fontSize: 12 }}
+                      labelStyle={{ color: t.textMuted }}
+                      formatter={(value: any) => [formatCurrency(Number(value)), "Cumulative Cost"]}
+                      labelFormatter={(label) => `Decision #${label}`}
+                    />
+                    <ReferenceLine y={budget} stroke={t.textMuted} strokeDasharray="4 4" label={{ value: `Budget`, position: "right", fontSize: 10, fill: t.textMuted }} />
+                    <Area type="monotone" dataKey="cost" stroke="url(#costLineGrad)" strokeWidth={2.5} fill="url(#costAreaGrad)"
+                      dot={(props: any) => {
+                        const { cx, cy, payload } = props;
+                        const c = payload.cost > budget ? t.neonRed : payload.cost > budget * 0.7 ? t.neonAmber : t.neonGreen;
+                        return <circle cx={cx} cy={cy} r={3.5} fill={c} stroke={t.bg} strokeWidth={1.5} />;
+                      }}
+                      activeDot={(props: any) => {
+                        const { cx, cy, payload } = props;
+                        const c = payload.cost > budget ? t.neonRed : payload.cost > budget * 0.7 ? t.neonAmber : t.neonGreen;
+                        return <circle cx={cx} cy={cy} r={5} fill={c} stroke={t.bg} strokeWidth={2} />;
+                      }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            );
+          })()}
         </div>
       )}
 
