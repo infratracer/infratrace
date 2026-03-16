@@ -95,11 +95,12 @@ export default function SensorDashboardPage() {
   const types = Object.keys(SENSOR_CONFIG) as SensorType[];
   const config = SENSOR_CONFIG[selectedType];
 
-  const chartData = history.map((r) => ({
-    time: new Date(r.recorded_at).toLocaleDateString("en-AU", { day: "2-digit", month: "short" }),
-    value: r.value,
-    anomaly: r.anomaly_flag,
-  }));
+  const chartData = history.map((r: any) => {
+    const dateStr = r.recorded_at || r.created_at || "";
+    const d = new Date(dateStr);
+    const label = isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-AU", { day: "2-digit", month: "short" });
+    return { time: label, value: r.value, anomaly: r.anomaly_flag };
+  });
 
   const wsColorMap: Record<string, string> = {
     connected: t.neonGreen,

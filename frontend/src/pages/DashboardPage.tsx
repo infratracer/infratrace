@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { getProjects } from "../api/projects";
+import { getProjects, createProject } from "../api/projects";
 import { getDecisions } from "../api/decisions";
 import { useProjectStore } from "../store/projectStore";
 import { useSensorStore } from "../store/sensorStore";
@@ -10,6 +10,8 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import { formatCurrency } from "../utils/format";
 import type { Project, Decision, SensorType } from "../types";
 import { SENSOR_CONFIG } from "../utils/constants";
+import { useToastStore } from "../store/toastStore";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from "recharts";
 
 export default function DashboardPage() {
   const t = useTheme();
@@ -25,7 +27,35 @@ export default function DashboardPage() {
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
   const latest = useSensorStore((s) => s.latest);
   const updateReading = useSensorStore((s) => s.updateReading);
+  const addToast = useToastStore((s) => s.addToast);
   const abortRef = useRef<AbortController | null>(null);
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [newProject, setNewProject] = useState({ name: "", description: "", original_budget: "" });
+  const [creatingProject, setCreatingProject] = useState(false);
+
+  const handleCreateProject = async () => {
+    if (!newProject.name || !newProject.description) {
+      addToast("Name and description are required.", "error");
+      return;
+    }
+    setCreatingProject(true);
+    try {
+      const proj = await createProject({
+        name: newProject.name,
+        description: newProject.description,
+        original_budget: parseFloat(newProject.original_budget) || 0,
+      });
+      setShowCreateProject(false);
+      setNewProject({ name: "", description: "", original_budget: "" });
+      addToast("Project created!", "success");
+      setActiveProject(proj.id);
+      loadData();
+    } catch {
+      addToast("Failed to create project.", "error");
+    } finally {
+      setCreatingProject(false);
+    }
+  };
 
   const loadData = async () => {
     abortRef.current?.abort();
@@ -170,54 +200,70 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Cost trajectory — using Recharts for proper responsive chart */}
+      {/* Cost trajectory — Recharts AreaChart */}
       {costData.length > 1 && (
         <div style={glass({ padding: "18px 20px", marginBottom: 20 })}>
-          <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 4, fontWeight: 500 }}>Cost Trajectory</div>
-          <div style={{ fontSize: 13, color: t.textMuted, marginBottom: 16 }}>{activeProject?.name}</div>
-          <div style={{ width: "100%", height: 180, position: "relative" }}>
-            <svg width="100%" height="100%" viewBox={`0 0 ${Math.max(costData.length * 40, 400)} 180`} preserveAspectRatio="xMidYMid meet">
-              {(() => {
-                const w = Math.max(costData.length * 40, 400);
-                const pad = { t: 20, r: 60, b: 30, l: 10 };
-                const cw = w - pad.l - pad.r;
-                const ch = 180 - pad.t - pad.b;
-                const maxCost = Math.max(...costData.map(d => d.cost), budget) * 1.15;
-                const sx = (i: number) => pad.l + (i / (costData.length - 1)) * cw;
-                const sy = (v: number) => pad.t + ch - (v / maxCost) * ch;
-                const budgetY = sy(budget);
-                const pts = costData.map((d, i) => `${sx(i)},${sy(d.cost)}`).join(" ");
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 16 }}>
+            <div>
+              <div style={{ fontSize: 12, color: t.textSecondary, fontWeight: 500 }}>Cost Trajectory</div>
+              <div style={{ fontSize: 13, color: t.textMuted, marginTop: 2 }}>{activeProject?.name} &middot; {costData.length} decisions</div>
+            </div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: costData[costData.length - 1].cost > budget ? t.neonRed : t.accent }}>
+              {formatCurrency(costData[costData.length - 1].cost)}
+            </div>
+          </div>
+          <div style={{ width: "100%", height: 200 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={costData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="costGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={t.accent} stopOpacity={0.15} />
+                    <stop offset="100%" stopColor={t.accent} stopOpacity={0.01} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={t.chartGrid} vertical={false} />
+                <XAxis dataKey="seq" tick={{ fontSize: 11, fill: t.textMuted }} axisLine={false} tickLine={false} tickFormatter={(v) => `#${v}`} />
+                <YAxis tick={{ fontSize: 11, fill: t.textMuted }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v / 1e6).toFixed(0)}M`} width={50} />
+                <Tooltip
+                  contentStyle={{ background: t.bgElevated, border: `0.5px solid ${t.glassBorder}`, borderRadius: 10, fontSize: 12, backdropFilter: "blur(20px)" }}
+                  labelStyle={{ color: t.textMuted }}
+                  formatter={(value: any) => [formatCurrency(Number(value)), "Cumulative Cost"]}
+                  labelFormatter={(label) => `Decision #${label}`}
+                />
+                <ReferenceLine y={budget} stroke={t.textMuted} strokeDasharray="4 4" label={{ value: `Budget ${formatCurrency(budget)}`, position: "right", fontSize: 10, fill: t.textMuted }} />
+                <Area type="monotone" dataKey="cost" stroke={t.accent} strokeWidth={2} fill="url(#costGrad)" dot={{ r: 3, fill: t.accent, stroke: "none" }} activeDot={{ r: 5, fill: t.accent, stroke: t.bg, strokeWidth: 2 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
-                return (
-                  <>
-                    {/* Grid lines */}
-                    {[0, 0.25, 0.5, 0.75, 1].map(p => (
-                      <line key={p} x1={pad.l} y1={pad.t + ch * (1 - p)} x2={w - pad.r} y2={pad.t + ch * (1 - p)} stroke={t.chartGrid} strokeWidth="0.5" />
-                    ))}
-                    {/* Budget line */}
-                    <line x1={pad.l} y1={budgetY} x2={w - pad.r} y2={budgetY} stroke={t.textMuted} strokeWidth="1" strokeDasharray="4,4" />
-                    <text x={w - pad.r + 6} y={budgetY + 3} fontSize="10" fill={t.textMuted} fontFamily="inherit">Budget</text>
-                    {/* Area fill */}
-                    <polygon points={`${pts} ${sx(costData.length - 1)},${pad.t + ch} ${sx(0)},${pad.t + ch}`} fill={t.accent} opacity="0.06" />
-                    {/* Line */}
-                    <polyline points={pts} fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    {/* Dots */}
-                    {costData.map((d, i) => (
-                      <circle key={i} cx={sx(i)} cy={sy(d.cost)} r={3}
-                        fill={d.cost > budget ? t.neonRed : t.accent}
-                        stroke={t.mode === "dark" ? "#1C1C1E" : "#F2F2F7"} strokeWidth="1.5" />
-                    ))}
-                    {/* End label */}
-                    {costData.length > 0 && (
-                      <text x={sx(costData.length - 1)} y={sy(costData[costData.length - 1].cost) - 10}
-                        textAnchor="end" fontSize="12" fill={costData[costData.length - 1].cost > budget ? t.neonRed : t.accent} fontWeight="600" fontFamily="inherit">
-                        {formatCurrency(costData[costData.length - 1].cost)}
-                      </text>
-                    )}
-                  </>
-                );
-              })()}
-            </svg>
+      {/* Create Project Modal */}
+      {showCreateProject && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(8px)" }}>
+          <div style={glass({ maxWidth: 400, width: "90%", padding: "28px 24px" })}>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, margin: "0 0 16px" }}>New Project</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 4 }}>Project Name</div>
+                <input value={newProject.name} onChange={e => setNewProject(p => ({ ...p, name: e.target.value }))} placeholder="e.g. EnergyConnect Phase 2"
+                  style={{ width: "100%", padding: "10px 12px", background: t.bgInput, border: `0.5px solid ${t.glassBorder}`, borderRadius: 10, color: t.textPrimary, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 4 }}>Description</div>
+                <textarea value={newProject.description} onChange={e => setNewProject(p => ({ ...p, description: e.target.value }))} placeholder="Brief description of the project..."
+                  style={{ width: "100%", padding: "10px 12px", background: t.bgInput, border: `0.5px solid ${t.glassBorder}`, borderRadius: 10, color: t.textPrimary, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit", minHeight: 60, resize: "vertical" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 4 }}>Original Budget (AUD)</div>
+                <input type="number" value={newProject.original_budget} onChange={e => setNewProject(p => ({ ...p, original_budget: e.target.value }))} placeholder="0"
+                  style={{ width: "100%", padding: "10px 12px", background: t.bgInput, border: `0.5px solid ${t.glassBorder}`, borderRadius: 10, color: t.textPrimary, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                <button onClick={() => setShowCreateProject(false)} style={{ flex: 1, padding: "9px", background: "transparent", border: `0.5px solid ${t.glassBorder}`, borderRadius: 10, color: t.textSecondary, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+                <button onClick={handleCreateProject} disabled={creatingProject} style={{ flex: 1, padding: "9px", background: t.accent, border: "none", borderRadius: 10, color: "#FFF", fontSize: 13, fontWeight: 500, cursor: creatingProject ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: creatingProject ? 0.6 : 1 }}>{creatingProject ? "Creating..." : "Create"}</button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -226,7 +272,10 @@ export default function DashboardPage() {
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 300px", gap: 16 }}>
         {/* Projects */}
         <div>
-          <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 10, fontWeight: 500 }}>Projects</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 12, color: t.textSecondary, fontWeight: 500 }}>Projects</span>
+            <button onClick={() => setShowCreateProject(true)} style={{ fontSize: 12, color: t.accent, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}>+ New Project</button>
+          </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {projects.map((p, i) => {
               const pct = p.budget > 0 ? ((p.spent - p.budget) / p.budget) * 100 : 0;

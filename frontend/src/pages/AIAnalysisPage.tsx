@@ -5,15 +5,25 @@ import { useTheme } from "../hooks/useTheme";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useToastStore } from "../store/toastStore";
 import { formatDate } from "../utils/format";
-import type { AIAnalysisResult, AIFinding } from "../types";
+import type { AIAnalysisResult } from "../types";
+
+const TYPE_LABELS: Record<string, string> = {
+  scope_creep: "Scope Creep",
+  cost_anomaly: "Cost Anomaly",
+  assumption_drift: "Assumption Drift",
+  approval_pattern: "Approval Risk",
+  sensor_contradiction: "Sensor Alert",
+  schedule_risk: "Schedule Risk",
+  risk_assessment: "Risk Assessment",
+};
 
 export default function AIAnalysisPage() {
   const { id } = useParams<{ id: string }>();
-  const [analyses, setAnalyses] = useState<AIAnalysisResult[]>([]);
+  const [findings, setFindings] = useState<AIAnalysisResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
-  const [selectedFinding, setSelectedFinding] = useState<AIFinding | null>(null);
+  const [selected, setSelected] = useState<AIAnalysisResult | null>(null);
   const t = useTheme();
   const isMobile = useIsMobile();
   const addToast = useToastStore((s) => s.addToast);
@@ -29,11 +39,10 @@ export default function AIAnalysisPage() {
     try {
       const data = await getAnalyses(id);
       if (controller.signal.aborted) return;
-      setAnalyses(data);
+      setFindings(data);
     } catch (err: any) {
       if (err?.name === "AbortError" || err?.code === "ERR_CANCELED") return;
-      console.error("Failed to load analyses:", err);
-      setError("Failed to load analysis data.");
+      setError("Failed to load analysis results.");
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
@@ -47,27 +56,26 @@ export default function AIAnalysisPage() {
     };
   }, [loadData]);
 
-  const handleRunAnalysis = async () => {
+  const handleRun = async () => {
     if (!id) return;
     setRunning(true);
     try {
       await runAnalysis(id);
-      addToast("Analysis triggered. Fetching results...", "info");
-      // Poll for results: check every 2s, max 30s
+      addToast("Analysis running — this may take a moment...", "info");
       let attempts = 0;
-      const startCount = analyses.length;
+      const startCount = findings.length;
       pollRef.current = setInterval(async () => {
         attempts++;
         try {
           const data = await getAnalyses(id);
           if (data.length > startCount) {
             if (pollRef.current) clearInterval(pollRef.current);
-            setAnalyses(data);
+            setFindings(data);
             setRunning(false);
             addToast("Analysis complete!", "success");
           } else if (attempts >= 15) {
             if (pollRef.current) clearInterval(pollRef.current);
-            setAnalyses(data);
+            setFindings(data);
             setRunning(false);
             addToast("Analysis may still be processing. Refresh to check.", "info");
           }
@@ -76,33 +84,30 @@ export default function AIAnalysisPage() {
           setRunning(false);
         }
       }, 2000);
-    } catch (err) {
-      console.error("Failed to run analysis:", err);
-      addToast("Failed to run analysis.", "error");
+    } catch {
+      addToast("Failed to start analysis.", "error");
       setRunning(false);
     }
   };
 
-  const glassCard: React.CSSProperties = {
+  const glass = (extra: React.CSSProperties = {}): React.CSSProperties => ({
     background: t.bgCard,
-    backdropFilter: "blur(40px) saturate(180%)",
-    WebkitBackdropFilter: "blur(40px) saturate(180%)",
-    border: `1px solid ${t.glassBorder}`,
+    backdropFilter: "blur(60px) saturate(150%)",
+    WebkitBackdropFilter: "blur(60px) saturate(150%)",
+    border: `0.5px solid ${t.glassBorder}`,
     borderRadius: 16,
-    boxShadow: `${t.glassShadow}, ${t.glassInnerGlow}`,
-    padding: "20px",
-  };
+    boxShadow: t.glassShadow,
+    padding: "18px",
+    ...extra,
+  });
 
-  const overline: React.CSSProperties = {
-    fontSize: 9, fontWeight: 600, letterSpacing: "0.12em",
-    textTransform: "uppercase" as const, color: t.textMuted,
-  };
+  const sevColor = (s: string) => s === "critical" ? t.neonRed : s === "warning" ? t.neonAmber : t.accent;
+  const sevBg = (s: string) => s === "critical" ? t.neonRedDim : s === "warning" ? t.neonAmberDim : t.accentDim;
 
   if (loading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 256 }}>
-        <span style={{ fontSize: 32, color: t.accent, animation: "spin 1s linear infinite" }}>{"\u25C7"}</span>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ width: 28, height: 28, border: `2.5px solid ${t.glassBorder}`, borderTopColor: t.accent, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       </div>
     );
   }
@@ -110,157 +115,158 @@ export default function AIAnalysisPage() {
   if (error) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 256 }}>
-        <div style={{ ...glassCard, maxWidth: 420, width: "100%", textAlign: "center", padding: "40px 32px" }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>!</div>
-          <h3 style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, marginBottom: 8 }}>Failed to Load Analysis</h3>
-          <p style={{ fontSize: 12, color: t.textSecondary, marginBottom: 20 }}>{error}</p>
-          <button onClick={loadData} style={{
-            padding: "10px 24px", background: t.accent, border: "none", borderRadius: 10,
-            color: "#FFF", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: t.btnShadow,
-          }}>Retry</button>
+        <div style={glass({ maxWidth: 380, width: "100%", textAlign: "center", padding: "36px 28px" })}>
+          <p style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, marginBottom: 6 }}>Unable to Load</p>
+          <p style={{ fontSize: 13, color: t.textSecondary, marginBottom: 20 }}>{error}</p>
+          <button onClick={loadData} style={{ padding: "8px 20px", background: t.accent, border: "none", borderRadius: 8, color: "#FFF", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>Try Again</button>
         </div>
       </div>
     );
   }
 
-  const latest = analyses[0];
-  const allFindings = analyses.flatMap((a) => a.findings || []);
-
-  const severityIcon = (severity: string) => {
-    if (severity === "critical") return "\u26A1";
-    if (severity === "warning") return "\u26A0";
-    return "\u2139";
-  };
-
-  const severityColor = (severity: string) => {
-    if (severity === "critical") return t.neonRed;
-    if (severity === "warning") return t.neonAmber;
-    return t.accent;
-  };
+  // Compute risk score from findings
+  const criticalCount = findings.filter(f => f.severity === "critical").length;
+  const warningCount = findings.filter(f => f.severity === "warning").length;
+  const riskScore = Math.min(100, criticalCount * 30 + warningCount * 15 + findings.length * 3);
+  const avgConfidence = findings.length > 0
+    ? Math.round(findings.reduce((s, f) => s + (f.confidence_score || 0), 0) / findings.length * 100)
+    : 0;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* Header with run button */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 20, color: t.accent }}>{"\u25C7"}</span>
-          <span style={{ fontSize: 13, fontWeight: 500, color: t.textSecondary }}>
-            {analyses.length} analysis run{analyses.length !== 1 ? "s" : ""}
-          </span>
+    <div style={{ animation: "fadeIn 0.3s ease", display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, margin: 0 }}>Risk Analysis</h3>
+          <p style={{ fontSize: 13, color: t.textSecondary, margin: "4px 0 0" }}>
+            AI-powered analysis of decision patterns, cost anomalies, and sensor data
+          </p>
         </div>
-        <button
-          onClick={handleRunAnalysis}
-          disabled={running}
+        <button onClick={handleRun} disabled={running}
           style={{
-            padding: "10px 20px", background: t.accent, border: "none", borderRadius: 10,
-            color: "#FFF", fontSize: 13, fontWeight: 600, fontFamily: "inherit",
+            padding: "9px 18px", background: t.accent, border: "none", borderRadius: 10,
+            color: "#FFF", fontSize: 13, fontWeight: 500, fontFamily: "inherit",
             cursor: running ? "not-allowed" : "pointer", opacity: running ? 0.6 : 1,
             display: "flex", alignItems: "center", gap: 6, boxShadow: t.btnShadow,
-          }}
-        >
-          <span>{"\u25B6"}</span> {running ? "Running..." : "Run Analysis"}
+          }}>
+          {running ? "Analysing..." : "Run Analysis"}
         </button>
       </div>
 
       {/* Empty state */}
-      {analyses.length === 0 && (
-        <div style={{
-          ...glassCard, textAlign: "center", padding: "48px 32px",
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
-        }}>
-          <span style={{ fontSize: 32, opacity: 0.6 }}>{"\u25C7"}</span>
-          <h3 style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary }}>No Analysis Results</h3>
-          <p style={{ fontSize: 12, color: t.textSecondary, maxWidth: 300 }}>
-            Run your first analysis to detect risk patterns, assumption drift, and cost anomalies.
+      {findings.length === 0 && (
+        <div style={glass({ textAlign: "center", padding: "48px 28px" })}>
+          <p style={{ fontSize: 28, marginBottom: 8, opacity: 0.4 }}>{"\u25C7"}</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, marginBottom: 4 }}>No Analysis Results</p>
+          <p style={{ fontSize: 13, color: t.textSecondary, maxWidth: 340, margin: "0 auto" }}>
+            Click "Run Analysis" to scan this project for risk patterns, cost anomalies, and governance issues.
           </p>
         </div>
       )}
 
-      {/* Risk score card */}
-      {latest && (
-        <div style={{ ...glassCard, padding: 24 }}>
-          <h3 style={{ ...overline, marginBottom: 12 }}>Latest Risk Score</h3>
-          <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-            <div style={{
-              fontSize: 48, fontWeight: 700,
-              color: latest.risk_score > 70 ? t.neonRed : latest.risk_score > 40 ? t.neonAmber : t.neonGreen,
-            }}>{latest.risk_score}</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ height: 12, borderRadius: 9999, overflow: "hidden", backgroundColor: t.divider }}>
-                <div style={{
-                  height: "100%", borderRadius: 9999, transition: "all 1s",
-                  width: `${latest.risk_score}%`,
-                  background: `linear-gradient(90deg, ${t.neonGreen}, ${t.neonAmber}, ${t.neonRed})`,
-                  boxShadow: `0 0 8px ${latest.risk_score > 70 ? t.neonRedDim : t.neonAmberDim}`,
-                }} />
+      {findings.length > 0 && (
+        <>
+          {/* Score cards */}
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 10 }}>
+            <div style={glass({ padding: "14px 16px" })}>
+              <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 6 }}>Risk Score</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: riskScore > 60 ? t.neonRed : riskScore > 30 ? t.neonAmber : t.neonGreen }}>{riskScore}</div>
+              <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: t.divider, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${riskScore}%`, borderRadius: 2, background: riskScore > 60 ? t.neonRed : riskScore > 30 ? t.neonAmber : t.neonGreen, transition: "width 0.5s" }} />
               </div>
-              <p style={{ fontSize: 12, marginTop: 8, color: t.textSecondary }}>{latest.summary}</p>
-              <p style={{ fontSize: 10, marginTop: 4, color: t.textMuted }}>{formatDate(latest.created_at)} &middot; {latest.model_version}</p>
+            </div>
+            <div style={glass({ padding: "14px 16px" })}>
+              <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 6 }}>Findings</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: t.textPrimary }}>{findings.length}</div>
+              <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>{criticalCount} critical, {warningCount} warning</div>
+            </div>
+            <div style={glass({ padding: "14px 16px" })}>
+              <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 6 }}>Confidence</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: t.textPrimary }}>{avgConfidence}%</div>
+              <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>average score</div>
+            </div>
+            <div style={glass({ padding: "14px 16px" })}>
+              <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 6 }}>Model</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: t.accent, marginTop: 8 }}>{findings[0]?.model_version?.split("/").pop()?.replace(":free", "") || "rule-based"}</div>
+              <div style={{ fontSize: 12, color: t.textMuted, marginTop: 4 }}>{formatDate(findings[0]?.created_at)}</div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Findings list */}
-      {allFindings.length > 0 && (
-        <div style={{ display: "grid", gap: 16, gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <h3 style={overline}>Findings ({allFindings.length})</h3>
-            {allFindings.map((f, i) => (
-              <div
-                key={i}
-                role="button"
-                tabIndex={0}
-                onClick={() => setSelectedFinding(f)}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setSelectedFinding(f); }}
-                style={{
-                  ...glassCard, padding: 12, cursor: "pointer",
-                  border: selectedFinding === f ? `1px solid ${t.accent}` : `1px solid ${t.glassBorder}`,
-                  transition: "border-color 0.2s",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                  <span style={{ marginTop: 2, flexShrink: 0, fontSize: 16, color: severityColor(f.severity) }}>{severityIcon(f.severity)}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <span style={{
-                        fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 6,
-                        background: severityColor(f.severity) + "22", color: severityColor(f.severity),
-                      }}>{f.severity}</span>
-                      <span style={{
-                        fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 6,
-                        background: t.accentDim, color: t.accent,
-                      }}>{f.type.replace("_", " ")}</span>
-                    </div>
-                    <h4 style={{ fontSize: 13, fontWeight: 500, color: t.textPrimary }}>{f.title}</h4>
-                    <p style={{
-                      fontSize: 11, marginTop: 4, color: t.textSecondary,
-                      overflow: "hidden", display: "-webkit-box",
-                      WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-                    }}>{f.description}</p>
+          {/* Findings list + detail */}
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ fontSize: 12, color: t.textSecondary, fontWeight: 500 }}>All Findings</div>
+              {findings.map((f) => (
+                <div key={f.id} role="button" tabIndex={0}
+                  onClick={() => setSelected(f)}
+                  onKeyDown={(e) => { if (e.key === "Enter") setSelected(f); }}
+                  style={glass({
+                    padding: "14px 16px", cursor: "pointer",
+                    border: `0.5px solid ${selected?.id === f.id ? t.accent : t.glassBorder}`,
+                  })}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 6,
+                      background: sevBg(f.severity), color: sevColor(f.severity),
+                    }}>{f.severity}</span>
+                    <span style={{ fontSize: 12, color: t.accent, fontWeight: 500 }}>
+                      {TYPE_LABELS[f.analysis_type] || f.analysis_type}
+                    </span>
+                    {f.confidence_score && (
+                      <span style={{ fontSize: 11, color: t.textMuted, marginLeft: "auto" }}>
+                        {Math.round(f.confidence_score * 100)}%
+                      </span>
+                    )}
                   </div>
+                  <p style={{
+                    fontSize: 13, color: t.textPrimary, margin: 0, lineHeight: 1.5,
+                    overflow: "hidden", display: "-webkit-box",
+                    WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                  }}>{f.finding}</p>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Finding detail panel */}
-          {selectedFinding && (
-            <div style={{ ...glassCard, position: "sticky", top: 96, height: "fit-content" }}>
-              <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12, color: t.textPrimary }}>{selectedFinding.title}</h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, fontSize: 12, color: t.textSecondary }}>
-                <div>
-                  <span style={{ ...overline, display: "block", marginBottom: 4 }}>Description</span>
-                  {selectedFinding.description}
-                </div>
-                <div>
-                  <span style={{ ...overline, display: "block", marginBottom: 4 }}>Recommendation</span>
-                  {selectedFinding.recommendation}
-                </div>
-              </div>
+              ))}
             </div>
-          )}
-        </div>
+
+            {/* Detail panel */}
+            {selected ? (
+              <div style={glass({ position: isMobile ? "relative" : "sticky", top: 80, height: "fit-content" })}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 6,
+                    background: sevBg(selected.severity), color: sevColor(selected.severity),
+                  }}>{selected.severity}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: t.textPrimary }}>
+                    {TYPE_LABELS[selected.analysis_type] || selected.analysis_type}
+                  </span>
+                </div>
+                <p style={{ fontSize: 13, color: t.textSecondary, lineHeight: 1.7, margin: "0 0 16px" }}>
+                  {selected.finding}
+                </p>
+                {selected.related_decisions && selected.related_decisions.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4, fontWeight: 500 }}>Affected Decisions</div>
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                      {selected.related_decisions.map((d, i) => (
+                        <span key={i} style={{
+                          fontSize: 11, padding: "2px 8px", borderRadius: 6,
+                          background: t.bgElevated, color: t.textSecondary,
+                        }}>#{String(d)}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: t.textMuted }}>
+                  <span>Confidence: {selected.confidence_score ? `${Math.round(selected.confidence_score * 100)}%` : "N/A"}</span>
+                  <span>{selected.model_version}</span>
+                </div>
+              </div>
+            ) : (
+              <div style={glass({ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 200 })}>
+                <p style={{ fontSize: 13, color: t.textMuted }}>Select a finding to see details</p>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

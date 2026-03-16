@@ -104,6 +104,7 @@ export interface SensorReading {
   unit: string;
   anomaly_flag: boolean;
   recorded_at: string;
+  created_at?: string;
 }
 
 export interface SensorMessage {
@@ -121,13 +122,17 @@ export interface AIAnalysisResult {
   id: string;
   project_id: string;
   analysis_type: string;
-  risk_score: number;
-  summary: string;
-  findings: AIFinding[];
-  related_decisions: string[];
-  related_sensors: string[];
+  severity: "info" | "warning" | "critical";
+  finding: string;
+  related_decisions: (string | number)[] | null;
+  related_sensors: string[] | null;
+  confidence_score: number | null;
   model_version: string;
   created_at: string;
+  // Legacy compat — frontend may still reference these
+  risk_score?: number;
+  summary?: string;
+  findings?: AIFinding[];
 }
 
 export interface AIFinding {

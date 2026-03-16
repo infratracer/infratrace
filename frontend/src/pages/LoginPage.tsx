@@ -249,17 +249,14 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p style={{
-          textAlign: "center",
-          fontSize: 11,
-          color: t.textMuted,
-          marginTop: 28,
-          marginBottom: 0,
-          letterSpacing: "0.02em",
-          lineHeight: 1.5,
-        }}>
-          Decision Audit Trail for Infrastructure Projects
-        </p>
+        <div style={{ marginTop: 28, textAlign: "center" }}>
+          <p style={{ fontSize: 12, color: t.textSecondary, lineHeight: 1.6, margin: 0 }}>
+            Blockchain-verified decision audit trail
+          </p>
+          <p style={{ fontSize: 11, color: t.textMuted, marginTop: 4 }}>
+            Track decisions &middot; Monitor sensors &middot; Verify integrity
+          </p>
+        </div>
       </div>
 
       <style>{`
