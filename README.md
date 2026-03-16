@@ -30,13 +30,16 @@ graph TB
     end
 
     subgraph Backend["Backend (FastAPI / Python 3.11)"]
-        API[REST API - 41+ Endpoints]
+        API[REST API - 55+ Endpoints]
         AUTH[JWT Auth + RBAC]
+        ORG[Multi-Tenant Orgs]
         HASH[SHA-256 Hash Chain]
         AI_SVC[AI Analysis Engine]
-        IOT[IoT Simulator]
+        FEEDS[Data Feed Service]
         WS_SERVER[WebSocket Server]
         PDF[PDF Report Generator]
+        SEARCH[Full-Text Search]
+        DOCS[Document Storage]
     end
 
     subgraph Storage["Data Layer"]
@@ -45,17 +48,27 @@ graph TB
         OR[OpenRouter API]
     end
 
+    subgraph External["External Data Feeds"]
+        OWM[OpenWeatherMap]
+        METAL[MetalpriceAPI]
+    end
+
     UI -->|HTTPS| API
     WS_CLIENT <-->|WSS| WS_SERVER
     API --> AUTH
+    API --> ORG
     API --> HASH
     API --> AI_SVC
     API --> PDF
-    IOT --> WS_SERVER
+    API --> SEARCH
+    API --> DOCS
+    FEEDS --> WS_SERVER
+    FEEDS --> OWM
+    FEEDS --> METAL
     HASH --> PG
     AI_SVC --> OR
     HASH --> BC
-    IOT --> PG
+    FEEDS --> PG
     AUTH --> PG
 ```
 
@@ -118,6 +131,17 @@ A project manager logs a decision to change contractors mid-project. InfraTrace 
 Three months later, when costs have escalated and questions are being asked, nobody can claim the decision was never made, was made by someone else, or was justified differently than it actually was. The record is there, verified, and immutable.
 
 That's the core of InfraTrace. Everything else — the dashboards, the AI analysis, the sensor feeds, the PDF reports — exists to make this fundamental capability useful to real people doing real work on real projects.
+
+### Getting started is simple
+
+A new organization deploys InfraTrace and the first administrator sets up their account through a guided bootstrap process. From there:
+
+1. **Admin creates the organization** — name, country, industry sector
+2. **Admin invites team members** by email — each person receives a secure link to set their own password
+3. **Project managers create projects** — a setup wizard walks them through configuring sensors, adding team members, and defining key assumptions
+4. **Users self-register** if the organization allows it, or join via invitation links
+
+No seed scripts. No hardcoded passwords. No IT intervention required. The platform is designed so that a non-technical government officer can set it up from a browser.
 
 ---
 
@@ -451,6 +475,96 @@ If any step fails, the anchor record is saved with `status=failed` and the decis
 
 </details>
 
+### 7. Multi-Tenant Organizations & Onboarding
+
+InfraTrace supports multiple organizations on a single deployment. Each organization has its own users, projects, and data isolation.
+
+```mermaid
+flowchart LR
+    subgraph Bootstrap["First-Time Setup"]
+        B1[Deploy Platform] --> B2[POST /setup/bootstrap]
+        B2 --> B3[Organization + Admin Created]
+    end
+
+    subgraph Invite["User Onboarding"]
+        I1[Admin creates invitation] --> I2[Token generated]
+        I2 --> I3[User clicks /invite/token]
+        I3 --> I4[Sets password + joins org]
+    end
+
+    subgraph Self["Self-Registration"]
+        S1[User visits /register] --> S2[Creates account]
+        S2 --> S3[Awaits org assignment]
+    end
+
+    B3 --> I1
+    B3 --> S1
+```
+
+**Bootstrap**: `POST /setup/bootstrap` creates the first organization and admin user. Only works when zero organizations exist — prevents accidental re-initialization.
+
+**Invitation flow**: Admins invite users by email. Each invitation generates a secure token with 7-day expiry. The invited user clicks the link, sets their password, and is immediately logged in with the correct role and organization.
+
+**Self-registration**: Users can create accounts at `/register`. They start as stakeholders and can be promoted by an admin.
+
+**Password recovery**: Full forgot-password → reset-password flow with time-limited JWT tokens.
+
+### 8. Configurable Per-Project Sensors
+
+Sensors are not hardcoded. Each project defines its own set of sensors with custom names, units, thresholds, and data sources.
+
+```mermaid
+flowchart TD
+    PM[Project Manager] -->|configures| SC[Project Sensor Config]
+    SC -->|data_source=api| API[Real API Feed]
+    SC -->|data_source=simulator| SIM[Simulator Fallback]
+    SC -->|data_source=manual| MAN[Manual Entry]
+
+    API --> OWM[OpenWeatherMap]
+    API --> MET[MetalpriceAPI]
+    API --> EXR[ExchangeRate API]
+
+    OWM --> WS[WebSocket Broadcast]
+    MET --> WS
+    SIM --> WS
+    WS --> DB[(sensor_readings)]
+    WS --> FE[Frontend Dashboard]
+```
+
+**Built-in providers**: OpenWeatherMap (temperature, rainfall, humidity, wind), MetalpriceAPI (steel, copper, aluminium, zinc), ExchangeRate API (currency conversion).
+
+**Automatic fallback**: If a real API is unavailable or unconfigured, the system falls back to a realistic simulator.
+
+**Per-project configuration**: A construction project monitors concrete prices and equipment rates. A mining project monitors ore prices and water levels. Each project defines exactly what it needs.
+
+### 9. Document Management
+
+Decisions reference supporting documents — contracts, engineering reports, tender evaluations. InfraTrace stores them with SHA-256 checksums for integrity verification.
+
+- **Upload**: `POST /projects/{id}/documents` (multipart, any file type)
+- **List**: `GET /projects/{id}/documents`
+- **Download**: `GET /projects/{id}/documents/{doc_id}/download`
+- **Integrity**: SHA-256 checksum computed on upload, stored alongside the file
+
+### 10. Full-Text Search
+
+PostgreSQL-native full-text search across all decision records (title, description, justification).
+
+```
+GET /search?q=steel+contractor&project_id=...
+```
+
+No external search engine required. Uses `to_tsvector` / `plainto_tsquery` for efficient indexed search.
+
+### 11. Project Setup Wizard
+
+New projects are guided through a 4-step setup wizard:
+
+1. **Select sensors** — Choose from 8 sensor templates or add custom
+2. **Add team members** — Invite by email with role assignment
+3. **Define assumptions** — Key project assumptions linked to sensors
+4. **Review & launch** — Summary of configuration before going live
+
 ---
 
 ## System Architecture
@@ -688,26 +802,92 @@ erDiagram
     sensor_readings ||--o{ decision_records : triggers
     assumptions_register ||--o{ sensor_readings : monitored_by
     users ||--o{ audit_log : generates
+
+    organizations {
+        uuid id PK
+        string name
+        string slug UK
+        string country
+        string industry
+        boolean is_active
+        timestamp created_at
+    }
+
+    project_sensors {
+        uuid id PK
+        uuid project_id FK
+        string name
+        string label
+        string unit
+        string category
+        string data_source
+        jsonb source_config
+        numeric threshold_max
+        numeric base_value
+        boolean is_active
+        timestamp created_at
+    }
+
+    documents {
+        uuid id PK
+        uuid project_id FK
+        uuid decision_id FK
+        string filename
+        string content_type
+        bigint size_bytes
+        string checksum_sha256
+        uuid uploaded_by FK
+        timestamp created_at
+    }
+
+    user_invitations {
+        uuid id PK
+        string email
+        uuid organisation_id FK
+        string role
+        string token UK
+        timestamp expires_at
+        timestamp accepted_at
+    }
+
+    project_settings {
+        uuid id PK
+        uuid project_id FK
+        string setting_key
+        jsonb setting_value
+    }
+
+    organizations ||--o{ users : employs
+    organizations ||--o{ user_invitations : sends
+    projects ||--o{ project_sensors : configures
+    projects ||--o{ documents : stores
+    projects ||--o{ project_settings : customizes
+    project_sensors ||--o{ sensor_readings : feeds
 ```
 
 ---
 
 ## API Reference
 
-InfraTrace exposes 41+ REST endpoints organized into 10 router groups, plus one WebSocket endpoint.
+InfraTrace exposes 55+ REST endpoints organized into 15 router groups, plus one WebSocket endpoint.
 
 ### Endpoint Groups
 
 | Group | Prefix | Auth | Endpoints |
 |-------|--------|------|-----------|
-| Auth | `/api/v1/auth` | Mixed | `POST /login`, `POST /refresh`, `POST /logout`, `GET /me` |
+| Auth | `/api/v1/auth` | Mixed | `POST /login`, `POST /refresh`, `POST /logout`, `GET /me`, `POST /forgot-password`, `POST /reset-password` |
+| Onboarding | `/api/v1` | Mixed | `POST /setup/bootstrap`, `POST /auth/register`, `POST /invitations`, `POST /invitations/accept/{token}`, `GET /organizations`, `GET /organizations/{id}` |
 | Projects | `/api/v1/projects` | JWT | `GET /`, `POST /`, `GET /{id}`, `PUT /{id}`, `DELETE /{id}`, `GET /{id}/members`, `POST /{id}/members`, `DELETE /{id}/members/{user_id}` |
 | Decisions | `/api/v1/projects/{id}/decisions` | JWT | `POST /`, `GET /`, `GET /timeline`, `GET /{decision_id}` |
 | Assumptions | `/api/v1/projects/{id}/assumptions` | JWT | `GET /`, `POST /`, `PUT /{assumption_id}`, `DELETE /{assumption_id}` |
 | Sensors | `/api/v1/projects/{id}/sensors` | JWT | `GET /`, `GET /latest`, `GET /anomalies` |
+| Sensor Config | `/api/v1/projects/{id}/sensors/config` | JWT | `GET /`, `POST /`, `PUT /{sensor_id}`, `DELETE /{sensor_id}` |
+| Settings | `/api/v1/projects/{id}/settings` | JWT | `GET /{key}`, `PUT /{key}` (decision_types, risk_levels) |
+| Documents | `/api/v1/projects/{id}/documents` | JWT | `POST /`, `GET /`, `GET /{doc_id}/download`, `DELETE /{doc_id}` |
 | Analysis | `/api/v1/projects/{id}/analysis` | JWT | `POST /`, `GET /`, `GET /{analysis_id}` |
 | Verification | `/api/v1/projects/{id}/verify` | JWT (admin/auditor) | `POST /chain`, `POST /blockchain` |
 | Reports | `/api/v1/projects/{id}/reports` | JWT | `POST /export` |
+| Search | `/api/v1/search` | JWT | `GET /?q=...&project_id=...` |
 | Admin | `/api/v1/admin` | JWT (admin) | `GET /users`, `POST /users`, `PUT /users/{id}`, `GET /audit-log` |
 | Public | `/api/v1/public` | None | `GET /projects/{id}/timeline`, `POST /projects/{id}/verify/chain`, `GET /verify/{record_hash}` |
 | WebSocket | `/ws/sensors/{project_id}` | None | Real-time sensor feed |
@@ -928,6 +1108,8 @@ SEED_DEMO_PASSWORD=demo123
 | `CONTRACT_ADDRESS` | No | `""` | Deployed InfraTraceAnchor address |
 | `POLYGON_CHAIN_ID` | No | `80002` | Polygon Amoy chain ID |
 | `OPENROUTER_API_KEY` | No | `""` | OpenRouter API key for AI analysis |
+| `OPENWEATHERMAP_API_KEY` | No | `""` | OpenWeatherMap API key for weather sensors |
+| `METALPRICEAPI_KEY` | No | `""` | MetalpriceAPI key for commodity price sensors |
 | `FRONTEND_URL` | No | `http://localhost:5173` | CORS allowed origin |
 | `ENVIRONMENT` | No | `development` | `development` or `production` |
 | `SEED_ADMIN_PASSWORD` | No | `admin123` | Password for seeded admin user |
@@ -941,19 +1123,40 @@ SEED_DEMO_PASSWORD=demo123
 alembic upgrade head
 ```
 
-### 5. Seed Demo Data (Optional)
+This runs all 6 migrations: initial schema → project_sensors → documents → enriched projects → project_settings → organizations.
 
-Start the server first, then call the seed endpoint:
+### 5. Start the Backend
 
 ```bash
-# Start the backend
 uvicorn app.main:app --reload --port 8000
+```
 
-# In another terminal, seed data (replace with your JWT_SECRET value)
+### 6. Bootstrap Your Organization (First Time)
+
+For a fresh deployment with no data, use the bootstrap endpoint to create your first organization and admin account:
+
+```bash
+curl -X POST http://localhost:8000/api/v1/setup/bootstrap \
+  -H "Content-Type: application/json" \
+  -d '{
+    "org_name": "Department of Infrastructure",
+    "org_slug": "doi",
+    "org_country": "Australia",
+    "admin_email": "admin@example.com",
+    "admin_password": "securepassword123",
+    "admin_full_name": "System Administrator"
+  }'
+```
+
+This returns an access token — you're immediately logged in.
+
+**Alternatively**, to load demo data with pre-built decision chains, sensor history, and AI analysis findings:
+
+```bash
 curl -X POST "http://localhost:8000/api/v1/seed?secret=your-jwt-secret-here"
 ```
 
-This creates demo users, projects, decision chains, assumptions, and sensor history.
+This creates 4 demo users, 3 projects, 15 decisions with real SHA-256 hash chains, 30 days of sensor history, and 4 AI analysis findings.
 
 ### 6. Frontend Setup
 
@@ -1384,27 +1587,38 @@ The PDF report generator compiles the full decision chain, hash verification res
 infratrace/
 ├── backend/
 │   ├── app/
-│   │   ├── api/                    # Route handlers (10 modules)
-│   │   │   ├── auth.py             # Login, refresh, logout, me
+│   │   ├── api/                    # Route handlers (15 modules)
+│   │   │   ├── auth.py             # Login, refresh, logout, me, forgot/reset password
+│   │   │   ├── onboarding.py       # Bootstrap, register, invitations, organizations
 │   │   │   ├── projects.py         # Project CRUD + member management
 │   │   │   ├── decisions.py        # Decision creation, listing, timeline
 │   │   │   ├── assumptions.py      # Assumptions register CRUD
 │   │   │   ├── sensors.py          # Sensor data queries + anomalies
+│   │   │   ├── project_sensors.py  # Per-project sensor configuration CRUD
+│   │   │   ├── project_settings.py # Configurable decision types, risk levels
+│   │   │   ├── documents.py        # Document upload, download, delete
+│   │   │   ├── search.py           # Full-text search across decisions
 │   │   │   ├── analysis.py         # AI analysis trigger + results
 │   │   │   ├── verification.py     # Chain + blockchain verification
 │   │   │   ├── reports.py          # PDF export
 │   │   │   ├── admin.py            # User management + audit log
-│   │   │   └── public.py           # Unauthenticated endpoints
+│   │   │   └── public.py           # Unauthenticated transparency endpoints
 │   │   ├── core/
 │   │   │   ├── security.py         # JWT, password hashing
 │   │   │   ├── dependencies.py     # FastAPI dependency injection
-│   │   │   └── permissions.py      # Project-level access control
-│   │   ├── models/                 # SQLAlchemy 2.0 mapped models (8 modules)
-│   │   │   ├── user.py             # User model
-│   │   │   ├── project.py          # Project + ProjectMember models
+│   │   │   ├── permissions.py      # Project-level access control
+│   │   │   └── rate_limit.py       # In-memory rate limiting middleware
+│   │   ├── models/                 # SQLAlchemy 2.0 mapped models (12 modules)
+│   │   │   ├── user.py             # User model (org FK, email_verified, must_change_password)
+│   │   │   ├── organization.py     # Organization model (multi-tenant)
+│   │   │   ├── invitation.py       # UserInvitation model
+│   │   │   ├── project.py          # Project + ProjectMember (GIS, currency, category)
+│   │   │   ├── project_sensor.py   # Per-project sensor configuration
+│   │   │   ├── project_setting.py  # Configurable project settings (JSONB)
 │   │   │   ├── decision.py         # DecisionRecord model
-│   │   │   ├── assumption.py       # Assumption model
-│   │   │   ├── sensor.py           # SensorReading model
+│   │   │   ├── assumption.py       # Assumption model (sensor_config FK)
+│   │   │   ├── sensor.py           # SensorReading model (sensor_config FK)
+│   │   │   ├── document.py         # Document model (SHA-256 checksum)
 │   │   │   ├── analysis.py         # AIAnalysisResult model
 │   │   │   ├── blockchain.py       # BlockchainAnchor model
 │   │   │   └── audit.py            # AuditLog model
@@ -1413,35 +1627,60 @@ infratrace/
 │   │   │   ├── hash_chain.py       # SHA-256 computation + chain verification
 │   │   │   ├── blockchain.py       # Polygon Amoy anchoring + verification
 │   │   │   ├── ai_analyser.py      # OpenRouter + rule-based fallback
-│   │   │   ├── iot_simulator.py    # Sensor data generation
-│   │   │   ├── sensor_monitor.py   # Anomaly detection
+│   │   │   ├── data_feeds.py       # Real API feeds (OpenWeatherMap, MetalpriceAPI, ExchangeRate)
+│   │   │   ├── iot_simulator.py    # Simulator fallback for sensor data
 │   │   │   ├── audit_service.py    # Audit log writer
 │   │   │   └── report_generator.py # WeasyPrint PDF generation
 │   │   ├── websocket/
-│   │   │   └── sensor_feed.py      # WebSocket server + simulator lifecycle
+│   │   │   └── sensor_feed.py      # WebSocket server + data feed orchestration
 │   │   ├── seed/
-│   │   │   └── demo_data.py        # Demo data seeder
+│   │   │   └── demo_data.py        # Demo data seeder (with sensor configs)
 │   │   ├── config.py               # Pydantic settings (env vars)
 │   │   ├── database.py             # Async engine + session factory
-│   │   └── main.py                 # FastAPI app + router registration
+│   │   └── main.py                 # FastAPI app + 15 router registrations
 │   ├── contracts/
-│   │   └── InfraTraceAnchor.sol    # Solidity smart contract
-│   ├── alembic/                    # Database migration scripts
-│   ├── Dockerfile                  # Production container
+│   │   └── InfraTraceAnchor.sol    # Solidity smart contract (Polygon Amoy)
+│   ├── alembic/
+│   │   └── versions/               # 6 migration scripts (001-006)
+│   ├── Dockerfile                  # Production container (auto-runs migrations)
 │   ├── requirements.txt            # Python dependencies
 │   └── railway.toml                # Railway deployment config
 ├── frontend/
 │   ├── src/
-│   │   ├── pages/                  # 12 page components
+│   │   ├── pages/                  # 19 page components
+│   │   │   ├── LoginPage.tsx       # Auth with forgot/register links
+│   │   │   ├── RegisterPage.tsx    # Self-service registration
+│   │   │   ├── ForgotPasswordPage.tsx
+│   │   │   ├── ResetPasswordPage.tsx
+│   │   │   ├── AcceptInvitePage.tsx # Invitation acceptance
+│   │   │   ├── DashboardPage.tsx   # Main dashboard with WelcomeBanner
+│   │   │   ├── TimelinePage.tsx    # Decision timeline
+│   │   │   ├── DecisionDetailPage.tsx
+│   │   │   ├── LogDecisionPage.tsx
+│   │   │   ├── SensorDashboardPage.tsx  # Live sensor feed
+│   │   │   ├── SensorConfigPage.tsx     # Sensor CRUD + API provider config
+│   │   │   ├── ProjectSetupPage.tsx     # 4-step setup wizard
+│   │   │   ├── AIAnalysisPage.tsx
+│   │   │   ├── VerifyChainPage.tsx
+│   │   │   ├── AssumptionsPage.tsx
+│   │   │   ├── ReportsPage.tsx
+│   │   │   ├── AdminUsersPage.tsx
+│   │   │   ├── AuditLogPage.tsx
+│   │   │   └── PublicTimelinePage.tsx   # Unauthenticated transparency view
 │   │   ├── components/
-│   │   │   ├── ui/                 # Reusable UI primitives
-│   │   │   ├── dashboard/          # Dashboard-specific components
-│   │   │   └── layout/             # AppLayout, Sidebar, TopBar, etc.
-│   │   ├── stores/                 # Zustand state stores
-│   │   ├── services/               # API client functions
+│   │   │   ├── ui/                 # Reusable UI primitives (12 components)
+│   │   │   ├── dashboard/          # WelcomeBanner, MetricsRow, CostTrajectory, etc.
+│   │   │   └── layout/             # AppLayout, Sidebar (project switcher), TopBar
+│   │   ├── api/                    # API client modules (11 modules)
+│   │   ├── store/                  # Zustand state stores (5 stores)
+│   │   ├── hooks/                  # Custom hooks (useTheme, useSensorSocket, useIsMobile)
 │   │   ├── types/                  # TypeScript type definitions
-│   │   ├── App.tsx                 # Router configuration
+│   │   ├── utils/                  # Format, risk, constants
+│   │   ├── config/                 # Theme + environment config
+│   │   ├── App.tsx                 # Router (19 routes, code-split)
 │   │   └── main.tsx                # Entry point
+│   ├── Dockerfile                  # Multi-stage build (node + nginx)
+│   ├── nginx.conf                  # SPA routing + gzip + caching
 │   ├── package.json
 │   └── vite.config.ts
 └── README.md
