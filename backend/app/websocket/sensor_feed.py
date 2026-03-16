@@ -23,6 +23,10 @@ from app.models.project_sensor import ProjectSensor
 from app.models.sensor import SensorReading
 from app.services.data_feeds import fetch_reading, _generate_simulated
 
+# Track anomaly counts per project to trigger AI analysis
+_anomaly_counts: dict[str, int] = {}
+_AI_TRIGGER_THRESHOLD = 3  # Trigger AI after this many anomalies in a feed cycle
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -122,7 +126,22 @@ async def run_sensor_feed(project_id: str, interval: int = 5) -> None:
                     }
                     await broadcast(project_id, message)
 
+                    if anomaly:
+                        _anomaly_counts[project_id] = _anomaly_counts.get(project_id, 0) + 1
+
                 await db.commit()
+
+                # Auto-trigger AI analysis when anomaly count exceeds threshold
+                if _anomaly_counts.get(project_id, 0) >= _AI_TRIGGER_THRESHOLD:
+                    _anomaly_counts[project_id] = 0
+                    try:
+                        from app.services.ai_analyser import analyse_project
+                        async with async_session() as ai_db:
+                            await analyse_project(ai_db, uuid.UUID(project_id))
+                            await ai_db.commit()
+                        logger.info("Auto-triggered AI analysis for project %s due to %d anomalies", project_id, _AI_TRIGGER_THRESHOLD)
+                    except Exception as ai_err:
+                        logger.error("Auto AI analysis failed for project %s: %s", project_id, ai_err)
 
         except Exception as e:
             logger.error("Sensor feed error for project %s: %s", project_id, e)

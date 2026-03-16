@@ -46,6 +46,9 @@ class Project(Base):
     )
     contract_value: Mapped[float | None] = mapped_column(Numeric(15, 2))
     funding_source: Mapped[str | None] = mapped_column(String(255))
+    organisation_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organizations.id"), nullable=True, index=True
+    )
     created_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )

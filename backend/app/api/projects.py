@@ -32,6 +32,9 @@ async def list_projects(
 ) -> list[ProjectResponse]:
     if current_user.role == "admin" or current_user.role == "auditor":
         query = select(Project)
+        # Scope to user's organization if they belong to one
+        if hasattr(current_user, "organisation_id") and current_user.organisation_id:
+            query = query.where(Project.organisation_id == current_user.organisation_id)
     else:
         query = (
             select(Project)
@@ -97,6 +100,16 @@ async def create_project(
         status=body.status,
         start_date=body.start_date,
         expected_end=body.expected_end,
+        category=body.category,
+        currency=body.currency,
+        country=body.country,
+        region=body.region,
+        latitude=body.latitude,
+        longitude=body.longitude,
+        parent_project_id=body.parent_project_id,
+        contract_value=body.contract_value,
+        funding_source=body.funding_source,
+        organisation_id=body.organisation_id or (current_user.organisation_id if hasattr(current_user, "organisation_id") else None),
         created_by=current_user.id,
     )
     db.add(project)

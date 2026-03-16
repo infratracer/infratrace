@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { createDecision } from "../api/decisions";
 import { DECISION_TYPES, RISK_LEVELS } from "../utils/constants";
+import { getProjectSetting, type SettingOption } from "../api/projectSettings";
 import { useAuthStore } from "../store/authStore";
 import { useTheme } from "../hooks/useTheme";
 import { useToastStore } from "../store/toastStore";
@@ -28,6 +29,14 @@ export default function LogDecisionPage() {
   const [phase, setPhase] = useState<SubmitPhase>("idle");
   const [newDecisionId, setNewDecisionId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [decisionTypes, setDecisionTypes] = useState<SettingOption[]>(DECISION_TYPES);
+  const [riskLevels, setRiskLevels] = useState<SettingOption[]>(RISK_LEVELS);
+
+  useEffect(() => {
+    if (!id) return;
+    getProjectSetting(id, "decision_types").then(r => { if (r.setting_value?.length) setDecisionTypes(r.setting_value); }).catch(() => {});
+    getProjectSetting(id, "risk_levels").then(r => { if (r.setting_value?.length) setRiskLevels(r.setting_value); }).catch(() => {});
+  }, [id]);
   const t = useTheme();
   const addToast = useToastStore((s) => s.addToast);
 
@@ -181,10 +190,8 @@ export default function LogDecisionPage() {
                 style={{ ...inputStyle, appearance: "auto" as const }}
               >
                 <option value="">Select...</option>
-                {DECISION_TYPES.map((opt) => (
-                  <option key={typeof opt === "string" ? opt : opt.value} value={typeof opt === "string" ? opt : opt.value}>
-                    {typeof opt === "string" ? opt : opt.label}
-                  </option>
+                {decisionTypes.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
               {errors.decision_type?.message && (
@@ -255,10 +262,8 @@ export default function LogDecisionPage() {
                   style={{ ...inputStyle, appearance: "auto" as const }}
                 >
                   <option value="">Select...</option>
-                  {RISK_LEVELS.map((opt) => (
-                    <option key={typeof opt === "string" ? opt : opt.value} value={typeof opt === "string" ? opt : opt.value}>
-                      {typeof opt === "string" ? opt : opt.label}
-                    </option>
+                  {riskLevels.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
                 {errors.risk_level?.message && (

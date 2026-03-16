@@ -20,6 +20,7 @@ class ProjectCreate(BaseModel):
     parent_project_id: uuid.UUID | None = None
     contract_value: float | None = None
     funding_source: str | None = Field(None, max_length=255)
+    organisation_id: uuid.UUID | None = None
 
 
 class ProjectUpdate(BaseModel):
@@ -75,6 +76,7 @@ class ProjectResponse(BaseModel):
     parent_project_id: uuid.UUID | None = None
     contract_value: float | None = None
     funding_source: str | None = None
+    organisation_id: uuid.UUID | None = None
     created_by: uuid.UUID
     created_at: datetime
     decision_count: int = 0
