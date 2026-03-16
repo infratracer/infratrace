@@ -77,3 +77,14 @@ app.include_router(ws_router)
 @app.get("/api/v1/health")
 async def health() -> dict[str, str]:
     return {"status": "ok", "version": "2.0.0"}
+
+
+@app.post("/api/v1/seed")
+async def seed_database(secret: str = "") -> dict[str, str]:
+    """One-time seed endpoint. Requires JWT_SECRET as auth."""
+    if secret != settings.JWT_SECRET:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Forbidden")
+    from app.seed.demo_data import seed
+    await seed()
+    return {"status": "seeded"}
