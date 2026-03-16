@@ -20,9 +20,16 @@ const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
 const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
 const PublicTimelinePage = lazy(() => import("./pages/PublicTimelinePage"));
+const SensorConfigPage = lazy(() => import("./pages/SensorConfigPage"));
+const ProjectSetupPage = lazy(() => import("./pages/ProjectSetupPage"));
+
+// Auth pages (no login required)
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const AcceptInvitePage = lazy(() => import("./pages/AcceptInvitePage"));
 
 function PageLoader() {
-  // Invisible fallback — prevents black flash during lazy chunk loads
   return <div style={{ minHeight: "100vh" }} />;
 }
 
@@ -37,9 +44,15 @@ export default function App() {
     <BrowserRouter>
       <Suspense fallback={<PageLoader />}>
         <Routes>
+          {/* Public routes — no auth */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/invite/:token" element={<AcceptInvitePage />} />
           <Route path="/public/:id" element={<PublicTimelinePage />} />
 
+          {/* Protected routes — require auth */}
           <Route
             element={
               <ProtectedRoute>
@@ -52,10 +65,12 @@ export default function App() {
             <Route path="/project/:id/decision/:did" element={<DecisionDetailPage />} />
             <Route path="/project/:id/log" element={<LogDecisionPage />} />
             <Route path="/project/:id/sensors" element={<SensorDashboardPage />} />
+            <Route path="/project/:id/sensors/config" element={<SensorConfigPage />} />
             <Route path="/project/:id/analysis" element={<AIAnalysisPage />} />
             <Route path="/project/:id/verify" element={<VerifyChainPage />} />
             <Route path="/project/:id/assumptions" element={<AssumptionsPage />} />
             <Route path="/project/:id/reports" element={<ReportsPage />} />
+            <Route path="/project/:id/setup" element={<ProjectSetupPage />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/audit-log" element={<AuditLogPage />} />
           </Route>

@@ -1,27 +1,40 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../store/authStore";
+import { useNavigate, useParams } from "react-router-dom";
 import { useThemeStore } from "../store/themeStore";
 import { useTheme } from "../hooks/useTheme";
+import { useAuthStore } from "../store/authStore";
 import client from "../api/client";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
+export default function AcceptInvitePage() {
+  const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
-  const setAuth = useAuthStore((s) => s.setAuth);
   const navigate = useNavigate();
+  const { token } = useParams<{ token: string }>();
+  const setAuth = useAuthStore((s) => s.setAuth);
   const toggle = useThemeStore((s) => s.toggle);
   const t = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
     setLoading(true);
     try {
-      const res = await client.post("/auth/login", { email, password });
+      const res = await client.post(`/invitations/accept/${token}`, {
+        password,
+        full_name: fullName,
+      });
       const { access_token } = res.data;
       const meRes = await client.get("/auth/me", {
         headers: { Authorization: `Bearer ${access_token}` },
@@ -29,7 +42,7 @@ export default function LoginPage() {
       setAuth(access_token, meRes.data);
       navigate("/");
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Login failed");
+      setError(err.response?.data?.detail || "Failed to accept invitation");
     } finally {
       setLoading(false);
     }
@@ -93,7 +106,7 @@ export default function LoginPage() {
         </button>
       </div>
 
-      {/* Login card — iOS Liquid Glass */}
+      {/* Card */}
       <div style={{
         width: "100%",
         maxWidth: 380,
@@ -125,44 +138,51 @@ export default function LoginPage() {
           />
         </div>
 
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: t.textPrimary, textAlign: "center", margin: "0 0 8px" }}>
+          You've been invited to InfraTrace
+        </h2>
+        <p style={{ fontSize: 13, color: t.textSecondary, textAlign: "center", margin: "0 0 28px", lineHeight: 1.5 }}>
+          Set up your account to join your team.
+        </p>
+
         <form onSubmit={handleSubmit}>
-          {/* Email */}
+          {/* Full Name */}
           <div style={{ marginBottom: 20 }}>
             <label style={{
               display: "block", fontSize: 10, fontWeight: 600,
               letterSpacing: "0.12em", textTransform: "uppercase",
-              color: focusedField === "email" ? t.accent : t.textMuted,
+              color: focusedField === "name" ? t.accent : t.textMuted,
               marginBottom: 8, transition: "color 0.2s",
             }}>
-              Email
+              Full Name
             </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
               required
-              placeholder="admin@infratrace.dev"
-              onFocus={() => setFocusedField("email")}
+              placeholder="Jane Smith"
+              onFocus={() => setFocusedField("name")}
               onBlur={() => setFocusedField(null)}
               style={{
                 width: "100%",
                 padding: "13px 16px",
                 background: t.bgInput,
-                border: `1px solid ${focusedField === "email" ? t.accent + "40" : t.glassBorder}`,
+                border: `1px solid ${focusedField === "name" ? t.accent + "40" : t.glassBorder}`,
                 borderRadius: 12,
                 color: t.textPrimary,
                 fontSize: 14,
                 outline: "none",
                 transition: "all 0.25s ease",
                 boxSizing: "border-box",
-                boxShadow: focusedField === "email" ? `0 0 0 3px ${t.accent}12` : "none",
+                boxShadow: focusedField === "name" ? `0 0 0 3px ${t.accent}12` : "none",
                 fontFamily: "inherit",
               }}
             />
           </div>
 
           {/* Password */}
-          <div style={{ marginBottom: 28 }}>
+          <div style={{ marginBottom: 20 }}>
             <label style={{
               display: "block", fontSize: 10, fontWeight: 600,
               letterSpacing: "0.12em", textTransform: "uppercase",
@@ -176,7 +196,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="Enter password"
+              placeholder="Min. 8 characters"
               onFocus={() => setFocusedField("password")}
               onBlur={() => setFocusedField(null)}
               style={{
@@ -191,6 +211,41 @@ export default function LoginPage() {
                 transition: "all 0.25s ease",
                 boxSizing: "border-box",
                 boxShadow: focusedField === "password" ? `0 0 0 3px ${t.accent}12` : "none",
+                fontFamily: "inherit",
+              }}
+            />
+          </div>
+
+          {/* Confirm Password */}
+          <div style={{ marginBottom: 28 }}>
+            <label style={{
+              display: "block", fontSize: 10, fontWeight: 600,
+              letterSpacing: "0.12em", textTransform: "uppercase",
+              color: focusedField === "confirm" ? t.accent : t.textMuted,
+              marginBottom: 8, transition: "color 0.2s",
+            }}>
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              placeholder="Confirm password"
+              onFocus={() => setFocusedField("confirm")}
+              onBlur={() => setFocusedField(null)}
+              style={{
+                width: "100%",
+                padding: "13px 16px",
+                background: t.bgInput,
+                border: `1px solid ${focusedField === "confirm" ? t.accent + "40" : t.glassBorder}`,
+                borderRadius: 12,
+                color: t.textPrimary,
+                fontSize: 14,
+                outline: "none",
+                transition: "all 0.25s ease",
+                boxSizing: "border-box",
+                boxShadow: focusedField === "confirm" ? `0 0 0 3px ${t.accent}12` : "none",
                 fontFamily: "inherit",
               }}
             />
@@ -243,19 +298,19 @@ export default function LoginPage() {
                   animation: "spin 0.7s linear infinite",
                   display: "inline-block",
                 }} />
-                Signing in...
+                Joining...
               </span>
-            ) : "Sign In"}
+            ) : "Accept & Join"}
           </button>
         </form>
 
-        {/* Links */}
-        <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between" }}>
-          <button onClick={() => navigate("/forgot-password")} style={{ background: "none", border: "none", color: t.accent, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
-            Forgot password?
-          </button>
-          <button onClick={() => navigate("/register")} style={{ background: "none", border: "none", color: t.accent, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
-            Create account
+        {/* Back to login */}
+        <div style={{ marginTop: 20, textAlign: "center" }}>
+          <button onClick={() => navigate("/login")} style={{
+            background: "none", border: "none", color: t.accent,
+            fontSize: 12, cursor: "pointer", fontFamily: "inherit",
+          }}>
+            Back to login
           </button>
         </div>
 

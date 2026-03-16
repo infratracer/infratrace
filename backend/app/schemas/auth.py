@@ -24,7 +24,10 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
     organisation: str | None = None
+    organisation_id: uuid.UUID | None = None
     is_active: bool
+    email_verified: bool = False
+    must_change_password: bool = False
     created_at: datetime
     last_login: datetime | None = None
 

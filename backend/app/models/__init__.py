@@ -1,4 +1,6 @@
 from app.models.user import User
+from app.models.organization import Organization
+from app.models.invitation import UserInvitation
 from app.models.project import Project, ProjectMember
 from app.models.decision import DecisionRecord
 from app.models.assumption import Assumption
@@ -10,6 +12,8 @@ from app.models.document import Document
 
 __all__ = [
     "User",
+    "Organization",
+    "UserInvitation",
     "Project",
     "ProjectMember",
     "DecisionRecord",

@@ -60,6 +60,7 @@ from app.api import analysis as analysis_router
 from app.api import verification as verification_router
 from app.api import reports as reports_router
 from app.api import admin as admin_router
+from app.api import onboarding as onboarding_router
 from app.api import public as public_router
 from app.api import project_sensors as project_sensors_router
 from app.api import documents as documents_router
@@ -78,6 +79,7 @@ app.include_router(analysis_router.router, prefix="/api/v1", tags=["analysis"])
 app.include_router(verification_router.router, prefix="/api/v1", tags=["verification"])
 app.include_router(reports_router.router, prefix="/api/v1", tags=["reports"])
 app.include_router(admin_router.router, prefix="/api/v1/admin", tags=["admin"])
+app.include_router(onboarding_router.router, prefix="/api/v1", tags=["onboarding"])
 app.include_router(public_router.router, prefix="/api/v1", tags=["public"])
 app.include_router(search_router.router, prefix="/api/v1", tags=["search"])
 app.include_router(project_settings_router.router, prefix="/api/v1", tags=["settings"])

@@ -51,6 +51,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
     { id: "log", label: "Log Decision", icon: "+", path: `/project/${projectId}/log`, disabled: !hasProject },
     { id: "assumptions", label: "Assumptions", icon: "\u2261", path: `/project/${projectId}/assumptions`, disabled: !hasProject },
     { id: "reports", label: "Reports", icon: "\u25A2", path: `/project/${projectId}/reports`, disabled: !hasProject },
+    { id: "sensor-config", label: "Sensor Config", icon: "\u2699", path: `/project/${projectId}/sensors/config`, disabled: !hasProject },
   ];
 
   const adminItems = [

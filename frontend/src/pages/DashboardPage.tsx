@@ -12,6 +12,7 @@ import type { Project, Decision } from "../types";
 import { SENSOR_CONFIG } from "../utils/constants";
 import { getSensorConfigs, type SensorConfig } from "../api/projectSensors";
 import { useToastStore } from "../store/toastStore";
+import WelcomeBanner from "../components/dashboard/WelcomeBanner";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from "recharts";
 
 export default function DashboardPage() {
@@ -133,12 +134,38 @@ export default function DashboardPage() {
 
   if (projects.length === 0) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: 300 }}>
-        <div style={{ ...glass({ maxWidth: 380, width: "100%", textAlign: "center", padding: "36px 28px" }) }}>
-          <p style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, marginBottom: 6 }}>No Projects</p>
-          <p style={{ fontSize: 13, color: t.textSecondary }}>Create your first project to get started.</p>
-        </div>
-      </div>
+      <>
+        <WelcomeBanner onCreateProject={() => setShowCreateProject(true)} />
+        {/* Create Project Modal */}
+        {showCreateProject && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 9998, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(8px)" }}>
+            <div style={glass({ maxWidth: 400, width: "90%", padding: "28px 24px" })}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, margin: "0 0 16px" }}>New Project</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 4 }}>Project Name</div>
+                  <input value={newProject.name} onChange={e => setNewProject(p => ({ ...p, name: e.target.value }))} placeholder="e.g. EnergyConnect Phase 2"
+                    style={{ width: "100%", padding: "10px 12px", background: t.bgInput, border: `0.5px solid ${t.glassBorder}`, borderRadius: 10, color: t.textPrimary, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 4 }}>Description</div>
+                  <textarea value={newProject.description} onChange={e => setNewProject(p => ({ ...p, description: e.target.value }))} placeholder="Brief description of the project..."
+                    style={{ width: "100%", padding: "10px 12px", background: t.bgInput, border: `0.5px solid ${t.glassBorder}`, borderRadius: 10, color: t.textPrimary, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit", minHeight: 60, resize: "vertical" }} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 4 }}>Original Budget (AUD)</div>
+                  <input type="number" value={newProject.original_budget} onChange={e => setNewProject(p => ({ ...p, original_budget: e.target.value }))} placeholder="0"
+                    style={{ width: "100%", padding: "10px 12px", background: t.bgInput, border: `0.5px solid ${t.glassBorder}`, borderRadius: 10, color: t.textPrimary, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+                </div>
+                <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                  <button onClick={() => setShowCreateProject(false)} style={{ flex: 1, padding: "9px", background: "transparent", border: `0.5px solid ${t.glassBorder}`, borderRadius: 10, color: t.textSecondary, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+                  <button onClick={handleCreateProject} disabled={creatingProject} style={{ flex: 1, padding: "9px", background: t.accent, border: "none", borderRadius: 10, color: "#FFF", fontSize: 13, fontWeight: 500, cursor: creatingProject ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: creatingProject ? 0.6 : 1 }}>{creatingProject ? "Creating..." : "Create"}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
