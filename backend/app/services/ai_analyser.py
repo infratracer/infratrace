@@ -200,6 +200,9 @@ async def _call_openrouter(
     return None
 
 
+VALID_ANALYSIS_TYPES = {"assumption_drift", "cost_anomaly", "approval_pattern", "scope_creep", "sensor_contradiction", "risk_assessment"}
+
+
 async def _save_findings(
     db: AsyncSession,
     project_id: uuid.UUID,
@@ -211,12 +214,19 @@ async def _save_findings(
 
     for pattern in patterns:
         confidence = min(max(float(pattern.get("confidence", 0.5)), 0.0), 1.0)
+        atype = pattern.get("type", "risk_assessment")
+        if atype not in VALID_ANALYSIS_TYPES:
+            atype = "risk_assessment"
+        # Ensure related_decisions are JSON-serializable (not UUIDs)
+        affected = pattern.get("affected_decisions", [])
+        if affected and not isinstance(affected[0], (int, str, float)):
+            affected = [str(a) for a in affected]
         finding = AIAnalysisResult(
             project_id=project_id,
-            analysis_type=pattern.get("type", "risk_assessment"),
+            analysis_type=atype,
             severity=pattern.get("severity", "info"),
             finding=pattern.get("explanation", "No explanation provided"),
-            related_decisions=pattern.get("affected_decisions"),
+            related_decisions=affected if affected else None,
             confidence_score=confidence,
             model_version=model_version,
         )
@@ -313,7 +323,7 @@ async def _rule_based_analysis(
         affected = [d.sequence_number for d in schedule_changes]
         finding = AIAnalysisResult(
             project_id=project_id,
-            analysis_type="schedule_risk",
+            analysis_type="risk_assessment",
             severity="warning",
             finding=f"Detected {len(schedule_changes)} schedule modifications. "
                     f"Frequent timeline adjustments indicate potential delivery risk.",
