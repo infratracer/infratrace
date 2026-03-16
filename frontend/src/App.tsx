@@ -22,17 +22,8 @@ const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
 const PublicTimelinePage = lazy(() => import("./pages/PublicTimelinePage"));
 
 function PageLoader() {
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 256 }}>
-      <div style={{
-        width: 28, height: 28,
-        border: "2.5px solid rgba(255,255,255,0.08)",
-        borderTopColor: "#0A84FF",
-        borderRadius: "50%",
-        animation: "spin 0.8s linear infinite",
-      }} />
-    </div>
-  );
+  // Invisible fallback — prevents black flash during lazy chunk loads
+  return <div style={{ minHeight: "100vh" }} />;
 }
 
 export default function App() {
