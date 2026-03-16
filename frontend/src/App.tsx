@@ -19,6 +19,7 @@ const AssumptionsPage = lazy(() => import("./pages/AssumptionsPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
 const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
+const PublicTimelinePage = lazy(() => import("./pages/PublicTimelinePage"));
 
 function PageLoader() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/public/:id" element={<PublicTimelinePage />} />
 
           <Route
             element={

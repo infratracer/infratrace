@@ -6,6 +6,7 @@ from app.models.sensor import SensorReading
 from app.models.analysis import AIAnalysisResult
 from app.models.blockchain import BlockchainAnchor
 from app.models.audit import AuditLog
+from app.models.document import Document
 
 __all__ = [
     "User",
@@ -17,4 +18,5 @@ __all__ = [
     "AIAnalysisResult",
     "BlockchainAnchor",
     "AuditLog",
+    "Document",
 ]

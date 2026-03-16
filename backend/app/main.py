@@ -66,6 +66,9 @@ from app.api import reports as reports_router
 from app.api import admin as admin_router
 from app.api import public as public_router
 from app.api import project_sensors as project_sensors_router
+from app.api import documents as documents_router
+from app.api import search as search_router
+from app.api import project_settings as project_settings_router
 from app.websocket.sensor_feed import router as ws_router
 
 app.include_router(auth_router.router, prefix="/api/v1/auth", tags=["auth"])
@@ -74,11 +77,14 @@ app.include_router(decisions_router.router, prefix="/api/v1", tags=["decisions"]
 app.include_router(assumptions_router.router, prefix="/api/v1", tags=["assumptions"])
 app.include_router(sensors_router.router, prefix="/api/v1", tags=["sensors"])
 app.include_router(project_sensors_router.router, prefix="/api/v1", tags=["sensor-config"])
+app.include_router(documents_router.router, prefix="/api/v1", tags=["documents"])
 app.include_router(analysis_router.router, prefix="/api/v1", tags=["analysis"])
 app.include_router(verification_router.router, prefix="/api/v1", tags=["verification"])
 app.include_router(reports_router.router, prefix="/api/v1", tags=["reports"])
 app.include_router(admin_router.router, prefix="/api/v1/admin", tags=["admin"])
 app.include_router(public_router.router, prefix="/api/v1", tags=["public"])
+app.include_router(search_router.router, prefix="/api/v1", tags=["search"])
+app.include_router(project_settings_router.router, prefix="/api/v1", tags=["settings"])
 app.include_router(ws_router)
 
 

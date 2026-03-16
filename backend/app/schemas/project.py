@@ -11,6 +11,15 @@ class ProjectCreate(BaseModel):
     status: str = "planning"
     start_date: date | None = None
     expected_end: date | None = None
+    category: str | None = Field(None, max_length=100)
+    currency: str = Field("AUD", max_length=3)
+    country: str | None = Field(None, max_length=100)
+    region: str | None = Field(None, max_length=255)
+    latitude: float | None = None
+    longitude: float | None = None
+    parent_project_id: uuid.UUID | None = None
+    contract_value: float | None = None
+    funding_source: str | None = Field(None, max_length=255)
 
 
 class ProjectUpdate(BaseModel):
@@ -20,6 +29,15 @@ class ProjectUpdate(BaseModel):
     start_date: date | None = None
     expected_end: date | None = None
     contract_address: str | None = Field(None, max_length=42)
+    category: str | None = Field(None, max_length=100)
+    currency: str | None = Field(None, max_length=3)
+    country: str | None = Field(None, max_length=100)
+    region: str | None = Field(None, max_length=255)
+    latitude: float | None = None
+    longitude: float | None = None
+    parent_project_id: uuid.UUID | None = None
+    contract_value: float | None = None
+    funding_source: str | None = Field(None, max_length=255)
 
 
 class MemberAdd(BaseModel):
@@ -48,6 +66,15 @@ class ProjectResponse(BaseModel):
     start_date: date | None = None
     expected_end: date | None = None
     contract_address: str | None = None
+    category: str | None = None
+    currency: str = "AUD"
+    country: str | None = None
+    region: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    parent_project_id: uuid.UUID | None = None
+    contract_value: float | None = None
+    funding_source: str | None = None
     created_by: uuid.UUID
     created_at: datetime
     decision_count: int = 0

@@ -35,6 +35,17 @@ class Project(Base):
     start_date: Mapped[date | None] = mapped_column(Date)
     expected_end: Mapped[date | None] = mapped_column(Date)
     contract_address: Mapped[str | None] = mapped_column(String(42))
+    category: Mapped[str | None] = mapped_column(String(100))
+    currency: Mapped[str] = mapped_column(String(3), default="AUD", server_default="AUD")
+    country: Mapped[str | None] = mapped_column(String(100))
+    region: Mapped[str | None] = mapped_column(String(255))
+    latitude: Mapped[float | None] = mapped_column(Numeric(10, 7))
+    longitude: Mapped[float | None] = mapped_column(Numeric(10, 7))
+    parent_project_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("projects.id"), nullable=True
+    )
+    contract_value: Mapped[float | None] = mapped_column(Numeric(15, 2))
+    funding_source: Mapped[str | None] = mapped_column(String(255))
     created_by: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )

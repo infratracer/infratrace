@@ -10,10 +10,12 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    hash_password,
     verify_password,
 )
 from app.database import get_db
 from app.models.user import User
+from pydantic import BaseModel, Field
 from app.schemas.auth import LoginRequest, TokenResponse, UserResponse
 from app.services.audit_service import log_action
 
@@ -157,3 +159,73 @@ async def get_me(
     current_user: User = Depends(get_current_user),
 ) -> User:
     return current_user
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8)
+
+
+@router.post("/forgot-password")
+async def forgot_password(
+    body: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Generate a password reset token. In production, this would send an email.
+    For demo purposes, the token is returned in the response."""
+    result = await db.execute(select(User).where(User.email == body.email))
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        # Don't reveal whether email exists
+        return {"detail": "If that email exists, a reset link has been sent."}
+
+    from datetime import timedelta
+    from jose import jwt as jose_jwt
+
+    reset_token = jose_jwt.encode(
+        {
+            "sub": str(user.id),
+            "type": "password_reset",
+            "exp": datetime.now(timezone.utc) + timedelta(hours=1),
+        },
+        settings.JWT_SECRET,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+
+    await log_action(db, user.id, "password_reset_requested", "user", user.id)
+
+    # In production: send email with reset link containing the token
+    # For demo: return token directly
+    return {
+        "detail": "If that email exists, a reset link has been sent.",
+        "reset_token": reset_token,
+    }
+
+
+@router.post("/reset-password")
+async def reset_password(
+    body: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Reset password using a valid reset token."""
+    payload = decode_token(body.token)
+    if payload is None or payload.get("type") != "password_reset":
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    user_id = payload.get("sub")
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.password_hash = hash_password(body.new_password)
+
+    await log_action(db, user.id, "password_reset_completed", "user", user.id)
+
+    return {"detail": "Password has been reset successfully."}
