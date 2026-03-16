@@ -6,7 +6,11 @@ from collections import defaultdict
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from sqlalchemy import select
 
+from app.database import async_session
+from app.models.assumption import Assumption
+from app.models.sensor import SensorReading
 from app.services.iot_simulator import SENSOR_CONFIGS, generate_reading
 
 logger = logging.getLogger(__name__)
@@ -30,19 +34,56 @@ async def broadcast(project_id: str, message: dict) -> None:
 
 
 async def run_simulator(project_id: str, interval: int = 5) -> None:
-    """Background task that generates and broadcasts sensor readings."""
+    """Background task that generates, persists, and broadcasts sensor readings."""
     step = 0
     while True:
-        for sensor_type in SENSOR_CONFIGS:
-            value, unit = generate_reading(sensor_type, step=step)
-            message = {
-                "sensor_type": sensor_type,
-                "value": value,
-                "unit": unit,
-                "anomaly": False,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-            await broadcast(project_id, message)
+        try:
+            async with async_session() as db:
+                # Load assumption thresholds once per cycle
+                result = await db.execute(
+                    select(Assumption).where(
+                        Assumption.project_id == uuid.UUID(project_id),
+                        Assumption.status == "active",
+                        Assumption.sensor_type.is_not(None),
+                        Assumption.threshold_value.is_not(None),
+                    )
+                )
+                assumptions = {a.sensor_type: float(a.threshold_value) for a in result.scalars().all()}
+
+                for sensor_type in SENSOR_CONFIGS:
+                    value, unit = generate_reading(sensor_type, step=step)
+
+                    # Check anomaly against assumption threshold
+                    threshold = assumptions.get(sensor_type)
+                    anomaly = threshold is not None and value > threshold
+                    deviation_pct = round(((value - threshold) / threshold) * 100, 1) if threshold and value > threshold else None
+
+                    # Persist to database
+                    reading = SensorReading(
+                        project_id=uuid.UUID(project_id),
+                        sensor_type=sensor_type,
+                        value=value,
+                        unit=unit,
+                        source="iot_simulator",
+                        anomaly_flag=anomaly,
+                    )
+                    db.add(reading)
+
+                    message = {
+                        "sensor_type": sensor_type,
+                        "value": value,
+                        "unit": unit,
+                        "anomaly": anomaly,
+                        "threshold": threshold,
+                        "deviation_pct": deviation_pct,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                    await broadcast(project_id, message)
+
+                await db.commit()
+        except Exception as e:
+            logger.error("Simulator error for project %s: %s", project_id, e)
+
         step += 1
         await asyncio.sleep(interval)
 

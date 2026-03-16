@@ -232,10 +232,24 @@ export default function AdminUsersPage() {
                   background: u.is_active ? t.neonGreenDim : t.neonRedDim,
                   color: u.is_active ? t.neonGreen : t.neonRed,
                 }}>{u.is_active ? "Active" : "Inactive"}</span>
-                <span style={{
-                  padding: "3px 10px", borderRadius: 8, fontSize: 11, fontWeight: 600,
-                  background: t.bgElevated, color: t.textSecondary,
-                }}>{u.role.replace("_", " ")}</span>
+                <select
+                  value={u.role}
+                  onChange={async (e) => {
+                    try {
+                      await updateUser(u.id, { role: e.target.value });
+                      addToast("Role updated.", "success");
+                      loadUsers();
+                    } catch { addToast("Failed to update role.", "error"); }
+                  }}
+                  style={{
+                    padding: "3px 8px", borderRadius: 8, fontSize: 11, fontWeight: 600,
+                    background: t.bgElevated, color: t.textSecondary,
+                    border: `1px solid ${t.glassBorder}`, cursor: "pointer",
+                    fontFamily: "inherit", appearance: "auto" as const,
+                  }}
+                >
+                  {ROLE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
                 {!isMobile && (
                   <span style={{ fontSize: 10, color: t.textMuted }}>{formatDate(u.created_at)}</span>
                 )}

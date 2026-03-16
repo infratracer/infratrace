@@ -38,10 +38,10 @@ export function decisionTypeLabel(type: DecisionType): string {
 
 export function riskColor(level: RiskLevel): string {
   const map = {
-    low: "#34D399",
-    medium: "#F59E0B",
-    high: "#F43F5E",
-    critical: "#F43F5E",
+    low: "#32D74B",
+    medium: "#FF9F0A",
+    high: "#FF453A",
+    critical: "#FF453A",
   };
   return map[level];
 }

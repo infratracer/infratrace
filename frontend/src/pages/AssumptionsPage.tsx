@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getAssumptions, createAssumption, updateAssumption } from "../api/assumptions";
+import { getAssumptions, createAssumption, updateAssumption, deleteAssumption } from "../api/assumptions";
 import { useTheme } from "../hooks/useTheme";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useToastStore } from "../store/toastStore";
@@ -78,6 +78,18 @@ export default function AssumptionsPage() {
       addToast("Failed to update assumption.", "error");
     }
     setConfirmAction(null);
+  };
+
+  const handleDelete = async (assumption: Assumption) => {
+    if (!id) return;
+    try {
+      await deleteAssumption(id, assumption.id);
+      addToast("Assumption deleted.", "success");
+      loadData();
+    } catch (err) {
+      console.error("Failed to delete assumption:", err);
+      addToast("Failed to delete assumption.", "error");
+    }
   };
 
   const glassCard: React.CSSProperties = {
@@ -272,9 +284,10 @@ export default function AssumptionsPage() {
                   <p style={{ fontSize: 10, marginTop: 8, marginBottom: 0, color: t.textMuted }}>Created {formatDate(a.created_at)}</p>
                 </div>
                 {a.status === "active" && (
-                  <div style={{ display: "flex", gap: 4 }}>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                     <button style={ghostBtnStyle} onClick={() => setConfirmAction({ assumption: a, status: "validated" })}>Validate</button>
                     <button style={ghostBtnStyle} onClick={() => setConfirmAction({ assumption: a, status: "invalidated" })}>Invalidate</button>
+                    <button style={{ ...ghostBtnStyle, color: t.neonRed, borderColor: t.neonRedDim }} onClick={() => handleDelete(a)}>Delete</button>
                   </div>
                 )}
               </div>

@@ -58,20 +58,22 @@ export interface Decision {
   schedule_impact_days: number;
   risk_level: RiskLevel;
   approved_by: string;
-  hash: string;
+  // Backend canonical fields
   record_hash: string;
   previous_hash: string;
-  blockchain_tx: string | null;
   tx_hash: string | null;
-  blockchain_status: string;
   block_number: number | null;
   chain_verified: boolean;
-  sensor_trigger_id: string | null;
   triggered_by_sensor: string | null;
   supporting_docs: string | null;
   assumptions: string | null;
   created_by: string;
   created_at: string;
+  // Computed by normalizeDecision() for frontend convenience
+  hash: string;
+  blockchain_tx: string | null;
+  blockchain_status: string;
+  sensor_trigger_id: string | null;
 }
 
 export interface Assumption {

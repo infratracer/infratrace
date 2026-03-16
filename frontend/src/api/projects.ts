@@ -35,3 +35,24 @@ export async function updateProject(
   const res = await client.put(`/projects/${id}`, data);
   return normalizeProject(res.data);
 }
+
+export async function deleteProject(id: string): Promise<void> {
+  await client.delete(`/projects/${id}`);
+}
+
+export async function getProjectMembers(projectId: string) {
+  const res = await client.get(`/projects/${projectId}/members`);
+  return res.data;
+}
+
+export async function addProjectMember(
+  projectId: string,
+  data: { user_id: string; project_role: string }
+) {
+  const res = await client.post(`/projects/${projectId}/members`, data);
+  return res.data;
+}
+
+export async function removeProjectMember(projectId: string, userId: string): Promise<void> {
+  await client.delete(`/projects/${projectId}/members/${userId}`);
+}

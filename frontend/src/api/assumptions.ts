@@ -32,3 +32,10 @@ export async function updateAssumption(
   const res = await client.put(`/projects/${projectId}/assumptions/${assumptionId}`, data);
   return res.data;
 }
+
+export async function deleteAssumption(
+  projectId: string,
+  assumptionId: string
+): Promise<void> {
+  await client.delete(`/projects/${projectId}/assumptions/${assumptionId}`);
+}

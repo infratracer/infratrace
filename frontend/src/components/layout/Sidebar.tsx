@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { useProjectStore } from "../../store/projectStore";
@@ -15,9 +16,12 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
   const location = useLocation();
   const { id: paramId } = useParams();
   const user = useAuthStore((s) => s.user);
+  const projects = useProjectStore((s) => s.projects);
   const activeProject = useProjectStore((s) => s.activeProject());
+  const setActiveProject = useProjectStore((s) => s.setActiveProject);
   const storeProjectId = useProjectStore((s) => s.activeProjectId);
   const projectId = paramId || storeProjectId;
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
 
   const getPage = () => {
     const p = location.pathname;
@@ -112,23 +116,58 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
         </div>
 
         {/* Project selector */}
-        <div style={{ padding: "12px 14px", borderBottom: `0.5px solid ${t.divider}` }}>
+        <div style={{ padding: "12px 14px", borderBottom: `0.5px solid ${t.divider}`, position: "relative" }}>
           <div style={{ fontSize: 11, letterSpacing: "0.01em", color: t.textSecondary, marginBottom: 6, fontWeight: 500 }}>Active Project</div>
-          <div style={{
-            padding: "8px 12px",
-            background: t.bgCard,
-            backdropFilter: "blur(40px)",
-            WebkitBackdropFilter: "blur(40px)",
-            borderRadius: 10,
-            border: `0.5px solid ${t.glassBorder}`,
-            fontSize: 13, color: t.textPrimary, fontWeight: 500, whiteSpace: "nowrap",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            cursor: "pointer",
-            transition: "background 0.2s",
-          }}>
-            <span>{activeProject?.name || "Select project"}</span>
-            {activeProject && <span style={{ fontSize: 6, color: t.neonGreen }}>{"\u25CF"}</span>}
+          <div
+            onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+            style={{
+              padding: "8px 12px",
+              background: t.bgCard,
+              backdropFilter: "blur(40px)",
+              WebkitBackdropFilter: "blur(40px)",
+              borderRadius: 10,
+              border: `0.5px solid ${showProjectDropdown ? t.accent : t.glassBorder}`,
+              fontSize: 13, color: t.textPrimary, fontWeight: 500, whiteSpace: "nowrap",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              cursor: "pointer",
+              transition: "border-color 0.2s",
+            }}>
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{activeProject?.name || "Select project"}</span>
+            <span style={{ fontSize: 10, color: t.textMuted, transform: showProjectDropdown ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>{"\u25BC"}</span>
           </div>
+          {showProjectDropdown && projects.length > 0 && (
+            <div style={{
+              position: "absolute", left: 14, right: 14, top: "100%", zIndex: 60,
+              marginTop: 4, borderRadius: 10, overflow: "hidden",
+              background: t.bgElevated, border: `0.5px solid ${t.glassBorder}`,
+              backdropFilter: "blur(40px)", boxShadow: t.glassShadow,
+              maxHeight: 200, overflowY: "auto",
+            }}>
+              {projects.map((p) => (
+                <div
+                  key={p.id}
+                  onClick={() => {
+                    setActiveProject(p.id);
+                    setShowProjectDropdown(false);
+                    navigate(`/project/${p.id}/timeline`);
+                    if (isMobile) onClose();
+                  }}
+                  style={{
+                    padding: "8px 12px", fontSize: 12, cursor: "pointer",
+                    color: p.id === projectId ? t.accent : t.textPrimary,
+                    background: p.id === projectId ? t.sidebarActive : "transparent",
+                    fontWeight: p.id === projectId ? 600 : 400,
+                    transition: "background 0.15s",
+                    borderBottom: `0.5px solid ${t.divider}`,
+                  }}
+                  onMouseEnter={(e) => { if (p.id !== projectId) (e.currentTarget as HTMLElement).style.background = t.bgCardHover; }}
+                  onMouseLeave={(e) => { if (p.id !== projectId) (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                >
+                  {p.name}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Nav */}

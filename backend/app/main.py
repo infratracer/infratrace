@@ -60,6 +60,7 @@ from app.api import analysis as analysis_router
 from app.api import verification as verification_router
 from app.api import reports as reports_router
 from app.api import admin as admin_router
+from app.api import public as public_router
 from app.websocket.sensor_feed import router as ws_router
 
 app.include_router(auth_router.router, prefix="/api/v1/auth", tags=["auth"])
@@ -71,6 +72,7 @@ app.include_router(analysis_router.router, prefix="/api/v1", tags=["analysis"])
 app.include_router(verification_router.router, prefix="/api/v1", tags=["verification"])
 app.include_router(reports_router.router, prefix="/api/v1", tags=["reports"])
 app.include_router(admin_router.router, prefix="/api/v1/admin", tags=["admin"])
+app.include_router(public_router.router, prefix="/api/v1", tags=["public"])
 app.include_router(ws_router)
 
 
