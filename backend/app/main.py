@@ -39,17 +39,13 @@ app = FastAPI(
     redoc_url="/redoc" if settings.ENVIRONMENT == "development" else None,
 )
 
-origins = [o.rstrip("/") for o in [settings.FRONTEND_URL] if o]
-if settings.ENVIRONMENT == "development":
-    origins.extend(["http://localhost:5173", "http://127.0.0.1:5173"])
-
-# Rate limiter must be added BEFORE CORS so CORS runs first (middleware is LIFO)
+# CORS: allow all origins. Auth is handled by JWT, not origin checking.
 app.add_middleware(RateLimitMiddleware, limit=100, window=60)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins if origins else ["*"],
-    allow_credentials=bool(origins),
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
