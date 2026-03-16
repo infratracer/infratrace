@@ -6,6 +6,7 @@ import { useIsMobile } from "../hooks/useIsMobile";
 import { useToastStore } from "../store/toastStore";
 import { useSensorStore } from "../store/sensorStore";
 import { SENSOR_CONFIG } from "../utils/constants";
+import { getSensorConfigs, type SensorConfig } from "../api/projectSensors";
 import { formatDate } from "../utils/format";
 import type { Assumption, SensorType } from "../types";
 
@@ -15,6 +16,7 @@ export default function AssumptionsPage() {
   const isMobile = useIsMobile();
   const addToast = useToastStore((s) => s.addToast);
   const latestSensors = useSensorStore((s) => s.latest);
+  const [projectSensors, setProjectSensors] = useState<SensorConfig[]>([]);
   const [assumptions, setAssumptions] = useState<Assumption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,8 +28,12 @@ export default function AssumptionsPage() {
     if (!id) return;
     setError(null);
     try {
-      const data = await getAssumptions(id);
+      const [data, configs] = await Promise.all([
+        getAssumptions(id),
+        getSensorConfigs(id).catch(() => []),
+      ]);
       setAssumptions(data);
+      setProjectSensors(configs);
     } catch (err) {
       console.error("Failed to load assumptions:", err);
       setError("Failed to load assumptions.");
@@ -165,7 +171,9 @@ export default function AssumptionsPage() {
     );
   }
 
-  const sensorOptions = Object.entries(SENSOR_CONFIG).map(([value, cfg]) => ({ value, label: cfg.label }));
+  const sensorOptions = projectSensors.length > 0
+    ? projectSensors.map(s => ({ value: s.name, label: s.label }))
+    : Object.entries(SENSOR_CONFIG).map(([value, cfg]) => ({ value, label: cfg.label }));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>

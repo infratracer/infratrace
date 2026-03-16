@@ -36,6 +36,9 @@ class Assumption(Base):
     threshold_value: Mapped[float | None] = mapped_column(Numeric(15, 2))
     threshold_unit: Mapped[str | None] = mapped_column(String(50))
     sensor_type: Mapped[str | None] = mapped_column(String(50))
+    sensor_config_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("project_sensors.id")
+    )
     original_decision_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("decision_records.id")
     )

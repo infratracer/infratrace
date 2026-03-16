@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     HF_MODEL_ID: str = ""
     OPENROUTER_API_KEY: str = ""
 
+    # Data Feeds
+    OPENWEATHERMAP_API_KEY: str = ""
+    METALPRICEAPI_KEY: str = ""
+
     # App
     FRONTEND_URL: str = "http://localhost:5173"
     ENVIRONMENT: str = "development"

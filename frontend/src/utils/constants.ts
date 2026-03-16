@@ -1,7 +1,10 @@
-import type { SensorType } from "../types";
-
-export const SENSOR_CONFIG: Record<
-  SensorType,
+/**
+ * FALLBACK sensor config — used only when project_sensors API hasn't loaded yet.
+ * The real sensor configuration is per-project and loaded from the backend.
+ * See: api/projectSensors.ts → getSensorConfigs()
+ */
+export const DEFAULT_SENSOR_CONFIG: Record<
+  string,
   { label: string; unit: string; base: number; range: [number, number] }
 > = {
   steel_price: { label: "Steel Price", unit: "$/tonne", base: 1000, range: [800, 1400] },
@@ -11,6 +14,9 @@ export const SENSOR_CONFIG: Record<
   temperature: { label: "Temperature", unit: "°C", base: 28, range: [15, 42] },
   delivery_status: { label: "Delivery Delay", unit: "days", base: 3, range: [0, 21] },
 };
+
+// Re-export as SENSOR_CONFIG for backward compatibility during migration
+export const SENSOR_CONFIG = DEFAULT_SENSOR_CONFIG;
 
 export const DECISION_TYPES = [
   { value: "scope_change", label: "Scope Change" },

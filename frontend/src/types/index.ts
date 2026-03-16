@@ -90,13 +90,8 @@ export interface Assumption {
   updated_at: string;
 }
 
-export type SensorType =
-  | "steel_price"
-  | "copper_price"
-  | "labour_rate"
-  | "rainfall"
-  | "temperature"
-  | "delivery_status";
+// SensorType is now dynamic (per-project), but we keep common defaults as a type hint
+export type SensorType = string;
 
 export interface SensorReading {
   id: string;
@@ -111,6 +106,9 @@ export interface SensorReading {
 
 export interface SensorMessage {
   sensor_type: SensorType;
+  sensor_id?: string;
+  label?: string;
+  category?: string;
   value: number;
   unit: string;
   anomaly: boolean;

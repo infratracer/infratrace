@@ -23,6 +23,9 @@ class SensorReading(Base):
     unit: Mapped[str] = mapped_column(String(50), nullable=False)
     source: Mapped[str | None] = mapped_column(String(100))
     anomaly_flag: Mapped[bool] = mapped_column(Boolean, default=False)
+    sensor_config_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("project_sensors.id")
+    )
     related_assumption_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("assumptions_register.id")
     )

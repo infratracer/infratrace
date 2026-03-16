@@ -8,8 +8,9 @@ import { useSensorSocket } from "../hooks/useSensorSocket";
 import { useTheme } from "../hooks/useTheme";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { formatCurrency } from "../utils/format";
-import type { Project, Decision, SensorType } from "../types";
+import type { Project, Decision } from "../types";
 import { SENSOR_CONFIG } from "../utils/constants";
+import { getSensorConfigs, type SensorConfig } from "../api/projectSensors";
 import { useToastStore } from "../store/toastStore";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from "recharts";
 
@@ -19,6 +20,7 @@ export default function DashboardPage() {
   const isMobile = useIsMobile();
   const [projects, setProjectsList] = useState<Project[]>([]);
   const [decisions, setDecisions] = useState<Decision[]>([]);
+  const [sensorConfigs, setSensorConfigs] = useState<SensorConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hoveredProject, setHoveredProject] = useState<number | null>(null);
@@ -71,9 +73,13 @@ export default function DashboardPage() {
       if (projs.length > 0) {
         const activeId = activeProjectId || projs[0].id;
         setActiveProject(activeId);
-        const decs = await getDecisions(activeId);
+        const [decs, configs] = await Promise.all([
+          getDecisions(activeId),
+          getSensorConfigs(activeId).catch(() => []),
+        ]);
         if (controller.signal.aborted) return;
         setDecisions(decs);
+        setSensorConfigs(configs);
       }
     } catch (err: any) {
       if (err?.name === "AbortError" || err?.code === "ERR_CANCELED") return;
@@ -153,11 +159,15 @@ export default function DashboardPage() {
       return acc;
     }, []);
 
-  const sensorTypes = Object.keys(SENSOR_CONFIG) as SensorType[];
-  const sensorData = sensorTypes.slice(0, 4).map(type => {
-    const cfg = SENSOR_CONFIG[type];
-    const reading = latest[type];
-    return { name: cfg.label, val: reading?.value ?? cfg.base, unit: cfg.unit, thresh: reading?.threshold ?? cfg.range[1], anom: reading?.anomaly ?? false };
+  const sensorData = (sensorConfigs.length > 0 ? sensorConfigs : Object.entries(SENSOR_CONFIG).map(([name, cfg]) => ({
+    name, label: cfg.label, unit: cfg.unit, base_value: cfg.base, range_max: cfg.range[1], threshold_max: null as number | null,
+  }))).slice(0, 6).map(cfg => {
+    const sName = "name" in cfg && typeof cfg.name === "string" ? cfg.name : "";
+    const reading = latest[sName];
+    const baseVal = ("base_value" in cfg ? cfg.base_value : 0) ?? 0;
+    const rangeMax = ("range_max" in cfg ? cfg.range_max : 100) ?? 100;
+    const thresh = ("threshold_max" in cfg ? cfg.threshold_max : null) ?? reading?.threshold ?? rangeMax;
+    return { name: ("label" in cfg ? cfg.label : sName) ?? sName, val: reading?.value ?? baseVal, unit: ("unit" in cfg ? cfg.unit : "") ?? "", thresh, anom: reading?.anomaly ?? false };
   });
 
   const driftColor = drift > 15 ? t.neonRed : drift > 5 ? t.neonAmber : t.neonGreen;

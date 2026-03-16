@@ -31,6 +31,7 @@ from app.models.audit import AuditLog
 from app.models.blockchain import BlockchainAnchor
 from app.models.decision import DecisionRecord
 from app.models.project import Project, ProjectMember
+from app.models.project_sensor import ProjectSensor
 from app.models.sensor import SensorReading
 from app.models.user import User
 from app.services.hash_chain import GENESIS_HASH, compute_hash
@@ -139,6 +140,56 @@ async def seed() -> None:
         await db.flush()
         logger.info("Seeded project members")
 
+        # Seed project sensor configurations
+        sensor_configs_data = [
+            {"name": "steel_price", "label": "Steel Price", "unit": "$/tonne", "category": "commodity",
+             "data_source": "simulator", "base_value": 1000, "range_min": 800, "range_max": 1400, "noise_factor": 50,
+             "threshold_max": 1100, "warning_threshold": 1000, "display_order": 0,
+             "source_config": {"provider": "metalpriceapi", "base": "USD", "symbol": "FE", "multiplier": 1}},
+            {"name": "copper_price", "label": "Copper Price", "unit": "$/tonne", "category": "commodity",
+             "data_source": "simulator", "base_value": 9000, "range_min": 7500, "range_max": 11000, "noise_factor": 200,
+             "threshold_max": 9500, "warning_threshold": 9000, "display_order": 1,
+             "source_config": {"provider": "metalpriceapi", "base": "USD", "symbol": "CU", "multiplier": 1}},
+            {"name": "labour_rate", "label": "Labour Rate", "unit": "$/hour", "category": "labour",
+             "data_source": "simulator", "base_value": 82, "range_min": 70, "range_max": 100, "noise_factor": 5,
+             "threshold_max": 92, "warning_threshold": 88, "display_order": 2},
+            {"name": "rainfall", "label": "Rainfall", "unit": "mm/day", "category": "weather",
+             "data_source": "simulator", "base_value": 10, "range_min": 0, "range_max": 50, "noise_factor": 8,
+             "threshold_max": 30, "warning_threshold": 20, "display_order": 3,
+             "source_config": {"provider": "openweathermap", "city": "Perth,AU", "field": "rain.1h"}},
+            {"name": "temperature", "label": "Temperature", "unit": "\u00b0C", "category": "weather",
+             "data_source": "simulator", "base_value": 28, "range_min": 15, "range_max": 42, "noise_factor": 4,
+             "threshold_max": 38, "warning_threshold": 35, "display_order": 4,
+             "source_config": {"provider": "openweathermap", "city": "Perth,AU", "field": "main.temp"}},
+            {"name": "delivery_status", "label": "Delivery Delay", "unit": "days", "category": "logistics",
+             "data_source": "simulator", "base_value": 3, "range_min": 0, "range_max": 21, "noise_factor": 3,
+             "threshold_max": 14, "warning_threshold": 10, "display_order": 5},
+        ]
+
+        sensor_config_objs = {}
+        for sc in sensor_configs_data:
+            obj = ProjectSensor(
+                project_id=energy_connect.id,
+                name=sc["name"],
+                label=sc["label"],
+                unit=sc["unit"],
+                category=sc.get("category"),
+                data_source=sc.get("data_source", "simulator"),
+                source_config=sc.get("source_config"),
+                base_value=sc.get("base_value"),
+                range_min=sc.get("range_min"),
+                range_max=sc.get("range_max"),
+                noise_factor=sc.get("noise_factor"),
+                threshold_max=sc.get("threshold_max"),
+                warning_threshold=sc.get("warning_threshold"),
+                display_order=sc.get("display_order", 0),
+                created_by=sarah.id,
+            )
+            db.add(obj)
+            sensor_config_objs[sc["name"]] = obj
+        await db.flush()
+        logger.info("Seeded %d project sensor configs for EnergyConnect", len(sensor_configs_data))
+
         assumptions_data = [
             {
                 "text": "Steel costs will not exceed $1,100/tonne",
@@ -184,6 +235,7 @@ async def seed() -> None:
 
         assumption_objs = []
         for a in assumptions_data:
+            sensor_cfg = sensor_config_objs.get(a["sensor_type"]) if a["sensor_type"] else None
             obj = Assumption(
                 project_id=energy_connect.id,
                 assumption_text=a["text"],
@@ -192,6 +244,7 @@ async def seed() -> None:
                 threshold_value=a["threshold_value"],
                 threshold_unit=a["threshold_unit"],
                 sensor_type=a["sensor_type"],
+                sensor_config_id=sensor_cfg.id if sensor_cfg else None,
             )
             db.add(obj)
             assumption_objs.append(obj)

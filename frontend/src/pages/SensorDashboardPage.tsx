@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { getSensorReadings, getLatestReadings } from "../api/sensors";
+import { getSensorConfigs, type SensorConfig } from "../api/projectSensors";
 import { useSensorSocket } from "../hooks/useSensorSocket";
 import { useSensorStore } from "../store/sensorStore";
 import { SENSOR_CONFIG } from "../utils/constants";
@@ -10,10 +11,11 @@ import { useTheme } from "../hooks/useTheme";
 
 export default function SensorDashboardPage() {
   const { id } = useParams<{ id: string }>();
+  const [sensorConfigs, setSensorConfigs] = useState<SensorConfig[]>([]);
   const [history, setHistory] = useState<SensorReading[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<SensorType>("steel_price");
+  const [selectedType, setSelectedType] = useState<SensorType>("");
   const latest = useSensorStore((s) => s.latest);
   const updateReading = useSensorStore((s) => s.updateReading);
   const t = useTheme();
@@ -29,8 +31,17 @@ export default function SensorDashboardPage() {
     setError(null);
     setLoading(true);
     try {
+      // Load sensor configs from API (per-project, not hardcoded)
+      const configs = await getSensorConfigs(id);
+      if (controller.signal.aborted) return;
+      setSensorConfigs(configs.filter(c => c.is_active));
+      if (configs.length > 0 && !selectedType) {
+        setSelectedType(configs[0].name);
+      }
+
+      const typeToFetch = selectedType || (configs.length > 0 ? configs[0].name : "");
       const [histData] = await Promise.all([
-        getSensorReadings(id, { sensor_type: selectedType, limit: 100 }),
+        typeToFetch ? getSensorReadings(id, { sensor_type: typeToFetch, limit: 100 }) : Promise.resolve([]),
         getLatestReadings(id).catch(() => []),
       ]);
       if (controller.signal.aborted) return;
@@ -92,8 +103,14 @@ export default function SensorDashboardPage() {
     );
   }
 
-  const types = Object.keys(SENSOR_CONFIG) as SensorType[];
-  const config = SENSOR_CONFIG[selectedType];
+  // Use API-loaded configs; fall back to hardcoded defaults if not loaded yet
+  const types = sensorConfigs.length > 0
+    ? sensorConfigs.map(c => c.name)
+    : (Object.keys(SENSOR_CONFIG) as SensorType[]);
+  const selectedConfig = sensorConfigs.find(c => c.name === selectedType);
+  const config = selectedConfig
+    ? { label: selectedConfig.label, unit: selectedConfig.unit, base: selectedConfig.base_value ?? 0, range: [selectedConfig.range_min ?? 0, selectedConfig.range_max ?? 100] as [number, number] }
+    : SENSOR_CONFIG[selectedType] || { label: selectedType, unit: "", base: 0, range: [0, 100] as [number, number] };
 
   const chartData = history.map((r: any) => {
     const dateStr = r.recorded_at || r.created_at || "";
@@ -140,10 +157,14 @@ export default function SensorDashboardPage() {
       {/* Sensor grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12 }}>
         {types.map((type) => {
-          const cfg = SENSOR_CONFIG[type];
+          const apiCfg = sensorConfigs.find(c => c.name === type);
+          const fallbackCfg = SENSOR_CONFIG[type];
+          const cfg = apiCfg
+            ? { label: apiCfg.label, unit: apiCfg.unit, base: apiCfg.base_value ?? 0, range: [apiCfg.range_min ?? 0, apiCfg.range_max ?? 100] as [number, number] }
+            : fallbackCfg || { label: type, unit: "", base: 0, range: [0, 100] as [number, number] };
           const reading = latest[type];
           const value = reading?.value ?? cfg.base;
-          const threshold = reading?.threshold ?? cfg.range[1];
+          const threshold = apiCfg?.threshold_max ?? reading?.threshold ?? cfg.range[1];
           const isAnomaly = reading?.anomaly ?? false;
           const isSelected = type === selectedType;
           const pct = Math.min((value / threshold) * 100, 100);
