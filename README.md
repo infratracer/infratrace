@@ -250,10 +250,15 @@ stateDiagram-v2
 ```
 
 Each project tracks:
+- Organisation ownership (multi-tenant isolation — users only see their org's projects)
 - Original budget and current budget (auto-updated by decision cost impacts)
+- Category, country, region, GIS coordinates (latitude/longitude)
+- Currency (ISO 4217), contract value, funding source
 - Start date and expected end date
 - Smart contract address (if blockchain anchoring is configured)
 - Member roster with project-level roles (`pm`, `auditor`, `stakeholder`)
+- Configurable decision types and risk levels per project
+- Sub-project hierarchy via parent_project_id
 
 ---
 
@@ -261,9 +266,14 @@ Each project tracks:
 
 InfraTrace uses OpenRouter to access multiple LLMs (Llama 3.3 70B, Mistral Small 3.1, Gemma 3, Qwen 3) with automatic model rotation on rate limits. A rule-based fallback engine provides analysis when AI services are unavailable.
 
+Analysis runs in two modes:
+- **Manual**: Project managers trigger analysis via `POST /projects/{id}/analysis`
+- **Automatic**: The sensor feed auto-triggers AI analysis when 3+ anomalies are detected in a monitoring cycle — no human intervention required
+
 ```mermaid
 graph TD
-    TRIGGER["Trigger Analysis<br/>POST /projects/{id}/analysis"] --> COLLECT["Collect Project Data"]
+    TRIGGER["Manual Trigger<br/>POST /projects/{id}/analysis"] --> COLLECT["Collect Project Data"]
+    AUTO["Auto-Trigger<br/>3+ sensor anomalies"] --> COLLECT
     COLLECT --> DECISIONS["Decision Chain"]
     COLLECT --> ASSUMPTIONS["Assumptions Register"]
     COLLECT --> SENSORS["Sensor Readings"]
@@ -509,6 +519,8 @@ flowchart LR
 
 **Password recovery**: Full forgot-password → reset-password flow with time-limited JWT tokens.
 
+**Data isolation**: Projects are scoped to their organization via `organisation_id`. Admins and auditors see only their own organization's projects. Decisions, sensors, assumptions, and documents inherit isolation through their parent project. Cross-organization data access is not possible.
+
 ### 8. Configurable Per-Project Sensors
 
 Sensors are not hardcoded. Each project defines its own set of sensors with custom names, units, thresholds, and data sources.
@@ -536,6 +548,8 @@ flowchart TD
 **Automatic fallback**: If a real API is unavailable or unconfigured, the system falls back to a realistic simulator.
 
 **Per-project configuration**: A construction project monitors concrete prices and equipment rates. A mining project monitors ore prices and water levels. Each project defines exactly what it needs.
+
+**Decision types are also configurable**: The default set (scope change, cost revision, approval, etc.) can be customized per project via `PUT /projects/{id}/settings/decision_types`. A government procurement office can add "tender evaluation" and "payment certificate." The frontend reads these from the API — nothing is hardcoded.
 
 ### 9. Document Management
 
@@ -1123,7 +1137,7 @@ SEED_DEMO_PASSWORD=demo123
 alembic upgrade head
 ```
 
-This runs all 6 migrations: initial schema → project_sensors → documents → enriched projects → project_settings → organizations.
+This runs all 7 migrations: initial schema → project_sensors → documents → enriched projects → project_settings → organizations → project org isolation.
 
 ### 5. Start the Backend
 
@@ -1574,7 +1588,7 @@ The PDF report generator compiles the full decision chain, hash verification res
 | PDF audit reports | Yes (with blockchain proofs) | Yes | Yes | Manual | No |
 | Append-only decision log | Enforced | No | No | No | Yes |
 | Assumption tracking | With sensor thresholds | No | No | No | No |
-| Anomaly detection | Threshold + AI | No | No | No | No |
+| Anomaly detection | Threshold + auto-triggered AI | No | No | No | No |
 | Open source | MIT | No | No | Yes | Varies |
 | Cost | Free | $$$$ | $$$$ | Free | Varies |
 | Self-hostable | Yes | No | No | N/A | Varies |
@@ -1641,7 +1655,7 @@ infratrace/
 │   ├── contracts/
 │   │   └── InfraTraceAnchor.sol    # Solidity smart contract (Polygon Amoy)
 │   ├── alembic/
-│   │   └── versions/               # 6 migration scripts (001-006)
+│   │   └── versions/               # 7 migration scripts (001-007)
 │   ├── Dockerfile                  # Production container (auto-runs migrations)
 │   ├── requirements.txt            # Python dependencies
 │   └── railway.toml                # Railway deployment config
