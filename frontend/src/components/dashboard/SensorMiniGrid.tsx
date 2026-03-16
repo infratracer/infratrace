@@ -41,7 +41,7 @@ export default function SensorMiniGrid({ latest }: SensorMiniGridProps) {
               </p>
               <p
                 className="text-[17px] font-bold mb-1"
-                style={{ color: isAnomaly ? "#FF3366" : "var(--text-primary)" }}
+                style={{ color: isAnomaly ? "var(--neon-red, #FF453A)" : "var(--text-primary)" }}
               >
                 {value.toFixed(1)}
               </p>

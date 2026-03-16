@@ -55,14 +55,14 @@ export default class ErrorBoundary extends Component<Props, State> {
               background: "rgba(255, 51, 102, 0.12)",
               display: "flex", alignItems: "center", justifyContent: "center",
               margin: "0 auto 18px",
-              fontSize: 22, color: "#FF3366",
+              fontSize: 22, color: "#FF453A",
             }}>
               !
             </div>
-            <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 8, color: "#E8ECF4" }}>
+            <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 8, color: "rgba(255,255,255,0.88)" }}>
               Something went wrong
             </h2>
-            <p style={{ fontSize: 12, color: "#8090B0", marginBottom: 24, lineHeight: 1.6 }}>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", marginBottom: 24, lineHeight: 1.6 }}>
               {this.state.error?.message || "An unexpected error occurred. Please try again."}
             </p>
             <button
