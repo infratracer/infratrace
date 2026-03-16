@@ -188,7 +188,7 @@ export default function SensorDashboardPage() {
       {/* History chart */}
       <div style={glassCard}>
         <h3 style={{ fontSize: 13, fontWeight: 600, marginBottom: 16, color: t.textPrimary }}>
-          {config.label} — 30 Day History
+          {config.label} — Recent Readings
         </h3>
         {chartData.length === 0 ? (
           <div style={{ height: 250, display: "flex", alignItems: "center", justifyContent: "center" }}>

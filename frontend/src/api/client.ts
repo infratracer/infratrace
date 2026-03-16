@@ -30,7 +30,8 @@ client.interceptors.response.use(
         useAuthStore.getState().setToken(token);
         original.headers.Authorization = `Bearer ${token}`;
         return client(original);
-      } catch {
+      } catch (refreshError) {
+        console.error("Token refresh failed, logging out:", refreshError);
         useAuthStore.getState().logout();
         window.location.href = "/login";
       }

@@ -83,11 +83,11 @@ export default function DashboardPage() {
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadData();
     return () => abortRef.current?.abort();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeProjectId]);
 
   useSensorSocket(activeProjectId || undefined, updateReading);
 
@@ -149,7 +149,7 @@ export default function DashboardPage() {
     .sort((a, b) => a.sequence_number - b.sequence_number)
     .reduce<{ seq: number; cost: number }[]>((acc, d) => {
       const prev = acc.length > 0 ? acc[acc.length - 1].cost : 0;
-      acc.push({ seq: d.sequence_number, cost: prev + d.cost_impact });
+      acc.push({ seq: d.sequence_number, cost: prev + (d.cost_impact ?? 0) });
       return acc;
     }, []);
 
@@ -338,7 +338,7 @@ export default function DashboardPage() {
                   <div style={{ height: 3, background: t.divider, borderRadius: 2, overflow: "hidden" }}>
                     <div style={{
                       height: "100%", borderRadius: 2,
-                      width: `${Math.min(Math.abs(pct) / 50 * 100, 100)}%`,
+                      width: `${Math.min(Math.abs(pct), 100)}%`,
                       background: pct > 15 ? t.neonRed : pct > 5 ? t.neonAmber : t.neonGreen,
                       transition: "width 0.5s ease",
                     }} />

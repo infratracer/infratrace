@@ -13,8 +13,8 @@ export default function CostTrajectoryChart({ decisions, budget }: CostTrajector
     return decisions
       .sort((a, b) => a.sequence_number - b.sequence_number)
       .map((d) => {
-        cumulative += d.cost_impact;
-        return { seq: d.sequence_number, cost: cumulative, title: d.title, impact: d.cost_impact };
+        cumulative += d.cost_impact ?? 0;
+        return { seq: d.sequence_number, cost: cumulative, title: d.title, impact: d.cost_impact ?? 0 };
       });
   }, [decisions]);
 

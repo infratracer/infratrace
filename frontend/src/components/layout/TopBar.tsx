@@ -1,6 +1,7 @@
 import { useTheme } from "../../hooks/useTheme";
 import { useThemeStore } from "../../store/themeStore";
 import { useAuthStore } from "../../store/authStore";
+import { logout as apiLogout } from "../../api/auth";
 import { useNavigate } from "react-router-dom";
 
 interface TopBarProps {
@@ -15,7 +16,8 @@ export default function TopBar({ title, onMenuClick, showMenu }: TopBarProps) {
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await apiLogout(); } catch { /* ignore */ }
     logout();
     navigate("/login");
   };

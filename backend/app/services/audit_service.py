@@ -26,6 +26,7 @@ async def log_action(
         ip_address=ip_address,
     )
     db.add(entry)
+    await db.flush()
     logger.info(
         "Audit: user=%s action=%s resource=%s/%s",
         user_id,

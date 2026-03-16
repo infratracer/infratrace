@@ -1,5 +1,6 @@
 import logging
 import uuid
+from decimal import Decimal
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -94,7 +95,7 @@ async def create_decision(
     db.add(decision)
 
     if body.cost_impact is not None:
-        project.current_budget = float(project.current_budget) + body.cost_impact
+        project.current_budget = Decimal(str(project.current_budget)) + Decimal(str(body.cost_impact))
 
     await log_action(
         db,
@@ -155,11 +156,18 @@ async def list_decisions(
 ) -> list[DecisionResponse]:
     await require_project_access(project_id, current_user, db)
 
+    VALID_TYPES = {"scope_change", "cost_revision", "assumption_change", "contractor_change", "schedule_change", "risk_acceptance", "approval"}
+    VALID_RISKS = {"low", "medium", "high", "critical"}
+
     query = select(DecisionRecord).where(DecisionRecord.project_id == project_id)
 
     if decision_type:
+        if decision_type not in VALID_TYPES:
+            raise HTTPException(status_code=400, detail=f"Invalid decision_type. Must be one of: {', '.join(sorted(VALID_TYPES))}")
         query = query.where(DecisionRecord.decision_type == decision_type)
     if risk:
+        if risk not in VALID_RISKS:
+            raise HTTPException(status_code=400, detail=f"Invalid risk level. Must be one of: {', '.join(sorted(VALID_RISKS))}")
         query = query.where(DecisionRecord.risk_level == risk)
 
     query = query.order_by(DecisionRecord.sequence_number.asc())

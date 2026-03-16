@@ -4,6 +4,7 @@ import { getAssumptions, createAssumption, updateAssumption } from "../api/assum
 import { useTheme } from "../hooks/useTheme";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useToastStore } from "../store/toastStore";
+import { useSensorStore } from "../store/sensorStore";
 import { SENSOR_CONFIG } from "../utils/constants";
 import { formatDate } from "../utils/format";
 import type { Assumption, SensorType } from "../types";
@@ -13,6 +14,7 @@ export default function AssumptionsPage() {
   const t = useTheme();
   const isMobile = useIsMobile();
   const addToast = useToastStore((s) => s.addToast);
+  const latestSensors = useSensorStore((s) => s.latest);
   const [assumptions, setAssumptions] = useState<Assumption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -252,14 +254,19 @@ export default function AssumptionsPage() {
                       <span style={{ fontSize: 11, color: t.textSecondary }}>
                         {SENSOR_CONFIG[a.sensor_type]?.label}: {"\u2264"} {a.threshold_value} {a.threshold_unit}
                       </span>
-                      <div style={{ width: 128, height: 6, background: t.bgInput, borderRadius: 3, overflow: "hidden" }}>
-                        <div style={{
-                          height: "100%",
-                          width: `${Math.min(100, ((SENSOR_CONFIG[a.sensor_type]?.base ?? 0) / a.threshold_value) * 100)}%`,
-                          background: (SENSOR_CONFIG[a.sensor_type]?.base ?? 0) > a.threshold_value ? t.neonRed : t.neonGreen,
-                          borderRadius: 3, transition: "width 0.3s ease",
-                        }} />
-                      </div>
+                      {(() => {
+                        const currentVal = latestSensors[a.sensor_type as SensorType]?.value ?? SENSOR_CONFIG[a.sensor_type]?.base ?? 0;
+                        return (
+                          <div style={{ width: 128, height: 6, background: t.bgInput, borderRadius: 3, overflow: "hidden" }}>
+                            <div style={{
+                              height: "100%",
+                              width: `${Math.min(100, (currentVal / a.threshold_value!) * 100)}%`,
+                              background: currentVal > a.threshold_value! ? t.neonRed : t.neonGreen,
+                              borderRadius: 3, transition: "width 0.3s ease",
+                            }} />
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                   <p style={{ fontSize: 10, marginTop: 8, marginBottom: 0, color: t.textMuted }}>Created {formatDate(a.created_at)}</p>

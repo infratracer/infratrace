@@ -153,4 +153,4 @@ async def generate_pdf_report(
         return html_content.encode("utf-8")
     except Exception as e:
         logger.error("PDF generation failed: %s", e)
-        return html_content.encode("utf-8")
+        raise RuntimeError(f"PDF generation failed: {e}") from e

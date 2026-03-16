@@ -1,7 +1,7 @@
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,6 +27,8 @@ async def list_sensors(
 ) -> list[SensorReadingResponse]:
     await require_project_access(project_id, current_user, db)
 
+    VALID_SENSOR_TYPES = {"steel_price", "copper_price", "labour_rate", "rainfall", "temperature", "delivery_status"}
+
     query = (
         select(SensorReading)
         .where(SensorReading.project_id == project_id)
@@ -35,6 +37,8 @@ async def list_sensors(
     )
 
     if sensor_type:
+        if sensor_type not in VALID_SENSOR_TYPES:
+            raise HTTPException(status_code=400, detail=f"Invalid sensor_type. Must be one of: {', '.join(sorted(VALID_SENSOR_TYPES))}")
         query = query.where(SensorReading.sensor_type == sensor_type)
 
     result = await db.execute(query)

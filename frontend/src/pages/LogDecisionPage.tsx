@@ -54,13 +54,14 @@ export default function LogDecisionPage() {
 
     try {
       setPhase("hashing");
-      await new Promise((r) => setTimeout(r, 800));
+      // Backend computes SHA-256 hash, links to chain, and anchors on Polygon
+      const decision = await createDecision(id, data);
 
       setPhase("chaining");
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 400));
 
       setPhase("anchoring");
-      const decision = await createDecision(id, data);
+      await new Promise((r) => setTimeout(r, 400));
 
       setPhase("done");
       setNewDecisionId(decision.id);

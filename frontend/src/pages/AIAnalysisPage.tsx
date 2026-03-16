@@ -62,22 +62,19 @@ export default function AIAnalysisPage() {
     try {
       await runAnalysis(id);
       addToast("Analysis running — this may take a moment...", "info");
+      const startTime = Date.now();
       let attempts = 0;
-      const startCount = findings.length;
       pollRef.current = setInterval(async () => {
         attempts++;
         try {
           const data = await getAnalyses(id);
-          if (data.length > startCount) {
+          // Check if any finding was created after we triggered the run
+          const hasNew = data.some(f => new Date(f.created_at).getTime() > startTime);
+          if (hasNew || attempts >= 15) {
             if (pollRef.current) clearInterval(pollRef.current);
             setFindings(data);
             setRunning(false);
-            addToast("Analysis complete!", "success");
-          } else if (attempts >= 15) {
-            if (pollRef.current) clearInterval(pollRef.current);
-            setFindings(data);
-            setRunning(false);
-            addToast("Analysis may still be processing. Refresh to check.", "info");
+            addToast(hasNew ? "Analysis complete!" : "Analysis may still be processing. Refresh to check.", hasNew ? "success" : "info");
           }
         } catch {
           if (pollRef.current) clearInterval(pollRef.current);

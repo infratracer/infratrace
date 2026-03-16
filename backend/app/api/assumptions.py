@@ -1,7 +1,7 @@
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -129,3 +129,26 @@ async def update_assumption(
         invalidated_by_id=assumption.invalidated_by_id,
         created_at=assumption.created_at,
     )
+
+
+@router.delete("/projects/{project_id}/assumptions/{assumption_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_assumption(
+    project_id: uuid.UUID,
+    assumption_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "project_manager")),
+) -> None:
+    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+
+    result = await db.execute(
+        select(Assumption).where(
+            Assumption.id == assumption_id,
+            Assumption.project_id == project_id,
+        )
+    )
+    assumption = result.scalar_one_or_none()
+    if assumption is None:
+        raise HTTPException(status_code=404, detail="Assumption not found")
+
+    await db.delete(assumption)
+    await log_action(db, current_user.id, "assumption_deleted", "assumption", assumption_id)

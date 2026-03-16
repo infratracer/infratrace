@@ -186,10 +186,10 @@ export default function DecisionDetailPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={badge(
               d.blockchain_status === "pending" ? t.neonAmberDim : t.neonRedDim,
-              d.blockchain_status === "pending" ? t.neonAmber : t.neonRed
-            )}>{d.blockchain_status}</span>
+              d.blockchain_status === "pending" ? t.neonAmber : t.textMuted
+            )}>{d.blockchain_status === "none" ? "Not Anchored" : d.blockchain_status}</span>
             <span style={{ fontSize: 11, color: t.textMuted }}>
-              {d.blockchain_status === "pending" ? "Waiting for confirmation..." : "Not yet anchored"}
+              {d.blockchain_status === "pending" ? "Waiting for confirmation..." : "Not yet anchored on Polygon"}
             </span>
           </div>
         )}

@@ -136,7 +136,11 @@ async def analyse_project(
         logger.warning("OpenRouter failed, falling back to rule-based analysis")
 
     # Fallback to rule-based
-    return await _rule_based_analysis(db, project_id, decisions, assumptions, sensor_readings)
+    try:
+        return await _rule_based_analysis(db, project_id, decisions, assumptions, sensor_readings)
+    except Exception as e:
+        logger.error("Rule-based analysis failed for project %s: %s", project_id, e)
+        return []
 
 
 async def _call_openrouter(

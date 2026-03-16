@@ -36,15 +36,17 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
 
   const page = getPage();
 
+  const hasProject = !!projectId;
+
   const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: "\u25A6", path: "/" },
-    { id: "timeline", label: "Timeline", icon: "\u2502", path: `/project/${projectId}/timeline` },
-    { id: "sensors", label: "Sensors", icon: "\u25C9", path: `/project/${projectId}/sensors` },
-    { id: "analysis", label: "AI Analysis", icon: "\u25C7", path: `/project/${projectId}/analysis` },
-    { id: "verify", label: "Verify Chain", icon: "\u26D3", path: `/project/${projectId}/verify` },
-    { id: "log", label: "Log Decision", icon: "+", path: `/project/${projectId}/log` },
-    { id: "assumptions", label: "Assumptions", icon: "\u2261", path: `/project/${projectId}/assumptions` },
-    { id: "reports", label: "Reports", icon: "\u25A2", path: `/project/${projectId}/reports` },
+    { id: "dashboard", label: "Dashboard", icon: "\u25A6", path: "/", disabled: false },
+    { id: "timeline", label: "Timeline", icon: "\u2502", path: `/project/${projectId}/timeline`, disabled: !hasProject },
+    { id: "sensors", label: "Sensors", icon: "\u25C9", path: `/project/${projectId}/sensors`, disabled: !hasProject },
+    { id: "analysis", label: "AI Analysis", icon: "\u25C7", path: `/project/${projectId}/analysis`, disabled: !hasProject },
+    { id: "verify", label: "Verify Chain", icon: "\u26D3", path: `/project/${projectId}/verify`, disabled: !hasProject },
+    { id: "log", label: "Log Decision", icon: "+", path: `/project/${projectId}/log`, disabled: !hasProject },
+    { id: "assumptions", label: "Assumptions", icon: "\u2261", path: `/project/${projectId}/assumptions`, disabled: !hasProject },
+    { id: "reports", label: "Reports", icon: "\u25A2", path: `/project/${projectId}/reports`, disabled: !hasProject },
   ];
 
   const adminItems = [
@@ -134,14 +136,16 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
           {navItems.map(n => {
             const isActive = page === n.id;
             return (
-              <button key={n.id} onClick={() => handleNav(n.path)} aria-label={`Navigate to ${n.label}`}
+              <button key={n.id} onClick={() => !n.disabled && handleNav(n.path)} aria-label={`Navigate to ${n.label}`}
+                disabled={n.disabled}
                 style={{
                   display: "flex", alignItems: "center", gap: 10, width: "100%",
                   padding: "8px 12px", marginBottom: 1, border: "none", borderRadius: 10,
-                  cursor: "pointer", fontSize: 13, fontWeight: isActive ? 600 : 400, textAlign: "left",
+                  cursor: n.disabled ? "not-allowed" : "pointer", fontSize: 13, fontWeight: isActive ? 600 : 400, textAlign: "left",
                   whiteSpace: "nowrap",
                   background: isActive ? t.sidebarActive : "transparent",
-                  color: isActive ? t.textPrimary : t.textSecondary,
+                  color: n.disabled ? t.textMuted : isActive ? t.textPrimary : t.textSecondary,
+                  opacity: n.disabled ? 0.5 : 1,
                   transition: "all 0.2s ease",
                   position: "relative",
                   fontFamily: "inherit",
@@ -203,7 +207,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
               fontSize: 11, fontWeight: 600, color: t.accent,
               backdropFilter: "blur(20px)",
             }}>
-              {user.full_name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+              {(user.full_name || "?").split(" ").filter(Boolean).map(n => n[0]).join("").slice(0, 2).toUpperCase()}
             </div>
             <div style={{ whiteSpace: "nowrap" }}>
               <div style={{ fontSize: 13, fontWeight: 500, color: t.textPrimary }}>{user.full_name}</div>

@@ -14,6 +14,7 @@ export default function AlertStrip({ anomalies }: AlertStripProps) {
 
   const latest = anomalies[anomalies.length - 1];
   const config = SENSOR_CONFIG[latest.sensor_type];
+  if (!config) return null;
 
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-neon-red-dim border border-neon-red/20 mb-4 animate-fade-in">

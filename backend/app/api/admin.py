@@ -70,7 +70,8 @@ async def update_user(
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    update_data = body.model_dump(exclude_unset=True)
+    ALLOWED_FIELDS = {"full_name", "role", "organisation", "is_active"}
+    update_data = {k: v for k, v in body.model_dump(exclude_unset=True).items() if k in ALLOWED_FIELDS}
     for field, value in update_data.items():
         setattr(user, field, value)
 

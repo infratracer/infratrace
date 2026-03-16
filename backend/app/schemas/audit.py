@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AuditLogResponse(BaseModel):
@@ -19,9 +19,9 @@ class AuditLogResponse(BaseModel):
 
 class UserCreateRequest(BaseModel):
     email: str
-    password: str
+    password: str = Field(min_length=8)
     full_name: str
-    role: str
+    role: str = Field(pattern="^(admin|project_manager|auditor|stakeholder)$")
     organisation: str | None = None
 
 

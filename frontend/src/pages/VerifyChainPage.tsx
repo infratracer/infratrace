@@ -24,21 +24,16 @@ export default function VerifyChainPage() {
     setChainResult(null);
     setProgress(0);
 
-    const interval = setInterval(() => {
-      setProgress((p) => Math.min(p + 15, 90));
-    }, 200);
-
     try {
       const result = await verifyChain(id);
       setProgress(100);
-      setTimeout(() => setChainResult(result), 300);
+      setChainResult(result);
       addToast(result.valid ? "Chain verification passed!" : "Chain integrity issue detected.", result.valid ? "success" : "error");
     } catch (err) {
       console.error("Chain verification failed:", err);
       setChainResult({ valid: false, total_records: 0, message: "Verification request failed. Check your connection." });
       addToast("Chain verification failed.", "error");
     } finally {
-      clearInterval(interval);
       setVerifyingChain(false);
     }
   };
@@ -50,22 +45,32 @@ export default function VerifyChainPage() {
 
     try {
       const decisions = await getDecisions(id);
-      const results: BlockchainVerification[] = [];
 
-      for (const d of decisions) {
-        try {
-          const result = await verifyBlockchain(id, d.id);
-          results.push(result);
-        } catch {
-          results.push({
-            decision_id: d.id,
-            on_chain: false,
-            hash_match: false,
-            tx_hash: null,
-            block_number: null,
-          });
-        }
-      }
+      const settledResults = await Promise.allSettled(
+        decisions.map(async (d) => {
+          try {
+            return await verifyBlockchain(id, d.id);
+          } catch {
+            return {
+              decision_id: d.id,
+              on_chain: false,
+              hash_match: false,
+              tx_hash: d.tx_hash || null,
+              block_number: d.block_number || null,
+            } as BlockchainVerification;
+          }
+        })
+      );
+
+      const results = settledResults.map((r) =>
+        r.status === "fulfilled" ? r.value : {
+          decision_id: "unknown",
+          on_chain: false,
+          hash_match: false,
+          tx_hash: null,
+          block_number: null,
+        } as BlockchainVerification
+      );
 
       setBlockchainResults(results);
       const verified = results.filter(r => r.on_chain).length;

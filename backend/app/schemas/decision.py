@@ -56,3 +56,12 @@ class ChainVerificationResult(BaseModel):
     total_records: int
     broken_at: int | None = None
     message: str
+
+
+class BlockchainVerificationResult(BaseModel):
+    valid: bool
+    total_records: int
+    verified: int
+    not_anchored: int = 0
+    failed: list[int] = []
+    message: str

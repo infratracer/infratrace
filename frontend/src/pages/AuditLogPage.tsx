@@ -1,11 +1,13 @@
 import { useEffect, useState, useRef } from "react";
 import { getAuditLog } from "../api/admin";
 import { useTheme } from "../hooks/useTheme";
+import { useToastStore } from "../store/toastStore";
 import { formatDateTime } from "../utils/format";
 import type { AuditLogEntry } from "../types";
 
 export default function AuditLogPage() {
   const t = useTheme();
+  const addToast = useToastStore((s) => s.addToast);
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +28,7 @@ export default function AuditLogPage() {
       if (err?.name === "AbortError" || err?.code === "ERR_CANCELED") return;
       console.error("Failed to load audit log:", err);
       setError("Failed to load audit log.");
+      addToast("Failed to load audit log.", "error");
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
