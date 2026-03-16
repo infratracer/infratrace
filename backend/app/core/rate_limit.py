@@ -22,8 +22,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.requests: dict[str, list[float]] = defaultdict(list)
 
     async def dispatch(self, request: Request, call_next):
-        # Skip rate limiting for health checks and WebSocket upgrades
-        if request.url.path == "/api/v1/health" or request.headers.get("upgrade") == "websocket":
+        # Skip rate limiting for health checks, CORS preflight, and WebSocket upgrades
+        if (
+            request.url.path == "/api/v1/health"
+            or request.method == "OPTIONS"
+            or request.headers.get("upgrade") == "websocket"
+        ):
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "unknown"

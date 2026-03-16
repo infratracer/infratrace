@@ -40,8 +40,14 @@ app = FastAPI(
 )
 
 origins = [o.rstrip("/") for o in [settings.FRONTEND_URL] if o]
+# Always allow the production domain
+if "infratrace.xyz" not in (settings.FRONTEND_URL or ""):
+    origins.append("https://infratrace.xyz")
 if settings.ENVIRONMENT == "development":
     origins.extend(["http://localhost:5173", "http://127.0.0.1:5173"])
+
+# Rate limiter must be added BEFORE CORS so CORS runs first (middleware is LIFO)
+app.add_middleware(RateLimitMiddleware, limit=100, window=60)
 
 app.add_middleware(
     CORSMiddleware,
@@ -50,8 +56,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.add_middleware(RateLimitMiddleware, limit=100, window=60)
 
 
 from app.api import auth as auth_router
@@ -86,13 +90,12 @@ async def health() -> dict[str, str]:
     return {"status": "ok", "version": "2.0.0"}
 
 
-if settings.ENVIRONMENT != "production":
-    @app.post("/api/v1/seed")
-    async def seed_database(secret: str = "") -> dict[str, str]:
-        """One-time seed endpoint. Requires JWT_SECRET as auth. Disabled in production."""
-        if secret != settings.JWT_SECRET:
-            from fastapi import HTTPException
-            raise HTTPException(status_code=403, detail="Forbidden")
+@app.post("/api/v1/seed")
+async def seed_database(secret: str = "") -> dict[str, str]:
+    """One-time seed endpoint. Protected by JWT_SECRET."""
+    if secret != settings.JWT_SECRET:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Forbidden")
         from app.seed.demo_data import seed
         await seed()
         return {"status": "seeded"}
