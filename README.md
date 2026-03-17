@@ -467,15 +467,18 @@ Custom errors: `NotOwner()`, `InvalidHash()`, `SequenceMismatch(expected, provid
 <details>
 <summary>Blockchain anchoring lifecycle</summary>
 
-The anchoring process follows these steps:
+The anchoring process is fully automated and runs on every decision creation:
 
-1. **Decision created** -- The backend computes the SHA-256 hash and persists the record
-2. **Anchor initiated** -- If `POLYGON_PRIVATE_KEY` and `CONTRACT_ADDRESS` are configured, the backend calls `anchorDecision()` on the smart contract
-3. **Transaction submitted** -- The signed transaction is sent to the Polygon Amoy RPC endpoint
-4. **Pending state** -- A `blockchain_anchors` record is created with `status=pending`
-5. **Receipt waited** -- The backend polls for the transaction receipt (up to 120 seconds)
-6. **Confirmed** -- On receipt, the anchor record is updated with `block_number`, `gas_used`, and `status=confirmed`
-7. **Decision updated** -- The `decision_records` row is updated with `tx_hash`, `block_number`, and `chain_verified=true`
+1. **Decision created** — The backend computes the SHA-256 hash, links it to the previous hash, and persists the record
+2. **Anchor task fired** — An `asyncio.create_task` fires a non-blocking background task (not FastAPI BackgroundTasks, which get killed by container restarts)
+3. **Transaction built** — The task builds and signs the `anchorDecision(projectId, sequence, hash)` call using the configured wallet
+4. **Submitted to Polygon** — The signed transaction is sent to the Polygon Amoy RPC endpoint via `asyncio.to_thread` (blocking web3 calls run in a thread pool)
+5. **Receipt confirmed** — `wait_for_transaction_receipt` polls until the block is confirmed (up to 60 seconds)
+6. **Database updated** — The `blockchain_anchors` record is saved with `status=confirmed`, and the `decision_records` row is updated with `tx_hash`, `block_number`, and `chain_verified=true`
+
+**Verified in production:** Decision hashes are anchored on Polygon Amoy testnet and independently verifiable on [PolygonScan](https://amoy.polygonscan.com/address/0x393a2A33aA934CB18d20Fa3C0624399AaFad1355). The smart contract is deployed, verified, and operational.
+
+**Contract:** [`0x393a2A33aA934CB18d20Fa3C0624399AaFad1355`](https://amoy.polygonscan.com/address/0x393a2A33aA934CB18d20Fa3C0624399AaFad1355)
 
 If any step fails, the anchor record is saved with `status=failed` and the decision remains valid in the local hash chain (blockchain anchoring is additive, not required for chain integrity).
 
@@ -973,11 +976,12 @@ Content-Type: application/json
   "risk_level": "high",
   "previous_hash": "a3f2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3",
   "record_hash": "e4f5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b0a1f2e3d4c5b6a7f8e9d0c1b2a3f4",
-  "tx_hash": null,
-  "block_number": null,
-  "chain_verified": false,
+  "tx_hash": "0x90364f79df3aec3b710629da76d35f08aa694eeb818dc9e520f4091f08ef6b51",
+  "block_number": 35289934,
+  "chain_verified": true,
+  "approved_by_name": "Sarah Chen",
   "created_by": "12345678-abcd-ef01-2345-6789abcdef01",
-  "created_at": "2026-03-16T10:30:00.123456+00:00"
+  "created_at": "2026-03-17T00:30:00.123456+00:00"
 }
 ```
 
@@ -1579,10 +1583,10 @@ The PDF report generator compiles the full decision chain, hash verification res
 
 | Capability | InfraTrace | Procore | OpenGov | CoST | Generic Blockchain Audit |
 |---|:-:|:-:|:-:|:-:|:-:|
-| Decision hash chain | Yes | No | No | No | Partial |
-| Blockchain anchoring | Polygon Amoy | No | No | No | Yes |
-| AI risk analysis | OpenRouter (4 models) | No | Limited | No | No |
-| IoT sensor integration | Real-time WebSocket | No | No | No | No |
+| Decision hash chain | Real SHA-256 (verified in production) | No | No | No | Partial |
+| Blockchain anchoring | Polygon Amoy (live, verified on PolygonScan) | No | No | No | Yes |
+| AI risk analysis | OpenRouter (4 models) + auto-trigger on anomalies | No | Limited | No | No |
+| IoT sensor integration | Real-time WebSocket + configurable per-project | No | No | No | No |
 | Multi-role RBAC | 4 platform + 3 project | Yes | Yes | Limited | No |
 | Public verification API | Yes (no auth) | No | Partial | Yes | Varies |
 | PDF audit reports | Yes (with blockchain proofs) | Yes | Yes | Manual | No |
