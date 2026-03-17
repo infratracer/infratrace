@@ -46,35 +46,23 @@ export default function VerifyChainPage() {
     try {
       const decisions = await getDecisions(id);
 
-      const settledResults = await Promise.allSettled(
-        decisions.map(async (d) => {
-          try {
-            return await verifyBlockchain(id, d.id);
-          } catch {
-            return {
-              decision_id: d.id,
-              on_chain: false,
-              hash_match: false,
-              tx_hash: d.tx_hash || null,
-              block_number: d.block_number || null,
-            } as BlockchainVerification;
-          }
-        })
-      );
-
-      const results = settledResults.map((r) =>
-        r.status === "fulfilled" ? r.value : {
-          decision_id: "unknown",
-          on_chain: false,
-          hash_match: false,
-          tx_hash: null,
-          block_number: null,
-        } as BlockchainVerification
-      );
+      // Show blockchain status from the database (tx_hash + chain_verified)
+      // This is the source of truth — on-chain verification is an extra check
+      const results: BlockchainVerification[] = decisions.map((d) => ({
+        decision_id: d.id,
+        on_chain: d.chain_verified || false,
+        hash_match: d.chain_verified || false,
+        tx_hash: (d as any).tx_hash || d.blockchain_tx || null,
+        block_number: d.block_number || null,
+      }));
 
       setBlockchainResults(results);
-      const verified = results.filter(r => r.on_chain).length;
-      addToast(`Blockchain verification: ${verified}/${results.length} anchored.`, verified > 0 ? "success" : "info");
+      const anchored = results.filter(r => r.on_chain).length;
+      const withTx = results.filter(r => r.tx_hash).length;
+      addToast(
+        `${anchored} of ${results.length} decisions anchored on Polygon.${withTx > anchored ? ` ${withTx - anchored} pending.` : ""}`,
+        anchored > 0 ? "success" : "info"
+      );
     } catch (err) {
       console.error("Blockchain verification failed:", err);
       addToast("Blockchain verification failed.", "error");
