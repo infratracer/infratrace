@@ -20,6 +20,7 @@ const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
 const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
 const PublicTimelinePage = lazy(() => import("./pages/PublicTimelinePage"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
 const SensorConfigPage = lazy(() => import("./pages/SensorConfigPage"));
 const ProjectSetupPage = lazy(() => import("./pages/ProjectSetupPage"));
 
@@ -45,6 +46,7 @@ export default function App() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public routes — no auth */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -60,7 +62,7 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/project/:id/timeline" element={<TimelinePage />} />
             <Route path="/project/:id/decision/:did" element={<DecisionDetailPage />} />
             <Route path="/project/:id/log" element={<LogDecisionPage />} />

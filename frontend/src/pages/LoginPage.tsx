@@ -27,7 +27,7 @@ export default function LoginPage() {
         headers: { Authorization: `Bearer ${access_token}` },
       });
       setAuth(access_token, meRes.data);
-      navigate("/");
+      navigate("/dashboard");
     } catch (err: any) {
       setError(err.response?.data?.detail || "Login failed");
     } finally {

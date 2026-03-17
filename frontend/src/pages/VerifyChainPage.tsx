@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { verifyChain, verifyBlockchain } from "../api/verification";
+import { verifyChain } from "../api/verification";
 import { getDecisions } from "../api/decisions";
 import { useTheme } from "../hooks/useTheme";
 import { useToastStore } from "../store/toastStore";

@@ -25,7 +25,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
 
   const getPage = () => {
     const p = location.pathname;
-    if (p === "/") return "dashboard";
+    if (p === "/" || p === "/dashboard") return "dashboard";
     if (p.includes("/timeline")) return "timeline";
     if (p.includes("/sensors")) return "sensors";
     if (p.includes("/analysis")) return "analysis";
@@ -43,7 +43,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
   const hasProject = !!projectId;
 
   const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: "\u25A6", path: "/", disabled: false },
+    { id: "dashboard", label: "Dashboard", icon: "\u25A6", path: "/dashboard", disabled: false },
     { id: "timeline", label: "Timeline", icon: "\u2502", path: `/project/${projectId}/timeline`, disabled: !hasProject },
     { id: "sensors", label: "Sensors", icon: "\u25C9", path: `/project/${projectId}/sensors`, disabled: !hasProject },
     { id: "analysis", label: "AI Analysis", icon: "\u25C7", path: `/project/${projectId}/analysis`, disabled: !hasProject },

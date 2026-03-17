@@ -33,7 +33,7 @@ export async function createDecision(
     justification: string;
     cost_impact?: number;
     risk_level?: string;
-    approved_by: string;
+    approved_by?: string;
     sensor_trigger_id?: string;
   }
 ): Promise<Decision> {
