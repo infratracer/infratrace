@@ -53,7 +53,7 @@ async def anchor_decision(
         account = w3.eth.account.from_key(settings.POLYGON_PRIVATE_KEY)
 
         try:
-            project_bytes = bytes.fromhex(str(project_id).replace("-", ""))
+            project_bytes = bytes.fromhex(str(project_id).replace("-", "")).ljust(32, b"\x00")
             hash_bytes = bytes.fromhex(record_hash)
         except ValueError as e:
             logger.error("Invalid hex conversion for project %s or hash %s: %s", project_id, record_hash[:16], e)
@@ -150,7 +150,7 @@ async def verify_onchain(
         )
 
         try:
-            project_bytes = bytes.fromhex(str(project_id).replace("-", ""))
+            project_bytes = bytes.fromhex(str(project_id).replace("-", "")).ljust(32, b"\x00")
             hash_bytes = bytes.fromhex(expected_hash)
         except ValueError as e:
             return {"verified": False, "reason": f"Invalid hex data: {e}"}

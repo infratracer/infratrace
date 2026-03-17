@@ -15,7 +15,7 @@ const decisionSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
   description: z.string().min(20, "Description must be at least 20 characters"),
   justification: z.string().min(20, "Justification must be at least 20 characters"),
-  cost_impact: z.number().default(0),
+  cost_impact: z.coerce.number().default(0),
   risk_level: z.string().optional(),
   approved_by: z.string().min(1, "Required"),
 });
