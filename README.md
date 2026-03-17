@@ -1412,16 +1412,21 @@ gantt
     Marketing landing page      :done, p2h, 2026-03, 2026-03
     Real data feeds (Metal/WX)  :done, p2i, 2026-03, 2026-03
 
-    section Phase 3 - Scale
-    Email notifications         :p3a, 2026-04, 2026-05
-    Compliance report templates :p3b, 2026-04, 2026-06
-    Audit trail export (CSV)    :p3c, 2026-05, 2026-06
+    section Phase 3 - Platform Maturity (Complete)
+    Email notifications (Resend):done, p3a, 2026-03, 2026-03
+    Approval workflows          :done, p3b, 2026-03, 2026-03
+    CSV/JSON data export        :done, p3c, 2026-03, 2026-03
+    Webhook event system        :done, p3d, 2026-03, 2026-03
+    GIS map view (Leaflet)      :done, p3e, 2026-03, 2026-03
+    Dashboard analytics (SVG)   :done, p3f, 2026-03, 2026-03
+    Mobile responsive           :done, p3g, 2026-03, 2026-03
+    Rate limiting (per-user/IP) :done, p3h, 2026-03, 2026-03
 
-    section Phase 4 - Mobile & i18n
-    Progressive Web App         :p4a, 2026-07, 2026-09
-    Multi-language support      :p4b, 2026-08, 2026-10
-    Offline-first decisions     :p4c, 2026-09, 2026-11
-    Push notifications          :p4d, 2026-09, 2026-10
+    section Phase 4 - Enterprise
+    Progressive Web App         :p4a, 2026-04, 2026-06
+    Multi-language support      :p4b, 2026-05, 2026-07
+    Offline-first decisions     :p4c, 2026-06, 2026-08
+    Push notifications          :p4d, 2026-06, 2026-07
 
     section Phase 5 - Marketplace
     Template marketplace        :p4a, 2026-11, 2027-01
@@ -1454,11 +1459,19 @@ Built and deployed in March 2026:
 - Project setup wizard (4-step guided flow)
 - Configurable decision types and risk levels per project
 
-### Phase 3 -- Scale
+### Phase 3 -- Platform Maturity (Complete)
 
-Email notifications, compliance report templates for government procurement standards (CoST IDS, OC4IDS), CSV/JSON export alongside PDF.
+Built and deployed in March 2026:
+- Email notification service (Resend API) — welcome, password reset, invitation, anomaly alerts
+- Approval workflows — sequential multi-party decision sign-off with audit trail
+- CSV/JSON export for decisions and audit logs with proper Content-Disposition headers
+- Webhook subscriptions — HMAC-SHA256 signed event dispatch for external integrations
+- GIS map view — Leaflet-based project map with status markers and glass sidebar
+- Dashboard analytics — decision trend charts, cost impact cards, risk donut, activity feed (pure SVG)
+- Mobile responsive — hamburger menu, collapsible sidebar, stacking grids across all pages
+- Rate limiting — per-user/per-IP sliding window (auth: 10/min, API: 120/min)
 
-### Phase 4 -- Mobile & Internationalization
+### Phase 4 -- Enterprise
 
 Progressive Web App with offline-first decision drafting, multi-language support for international deployment, and push notifications for anomaly alerts.
 
