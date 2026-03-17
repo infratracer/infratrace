@@ -439,7 +439,7 @@ async def seed() -> None:
                 created_by=sarah.id,
                 previous_hash=previous_hash,
                 record_hash=record_hash,
-                chain_verified=True,
+                chain_verified=False,
                 triggered_by_sensor=triggered_sensor_id,
                 created_at=created_at,
             )
@@ -450,26 +450,10 @@ async def seed() -> None:
         await db.flush()
         logger.info("Seeded 15 decisions with real SHA-256 hash chain")
 
-        # Seed blockchain anchors (placeholders for demo)
-        for decision in decision_objs:
-            fake_tx = "0x" + secrets.token_hex(32)
-            anchor = BlockchainAnchor(
-                decision_id=decision.id,
-                record_hash=decision.record_hash,
-                tx_hash=fake_tx,
-                block_number=45000000 + decision.sequence_number * 1000,
-                network="amoy",
-                status="confirmed",
-                gas_used=85000 + decision.sequence_number * 500,
-                confirmed_at=decision.created_at + timedelta(minutes=2),
-            )
-            db.add(anchor)
-
-            decision.tx_hash = fake_tx
-            decision.block_number = anchor.block_number
-
-        await db.flush()
-        logger.info("Seeded 15 blockchain anchor records")
+        # Note: blockchain anchors are NOT seeded with fake data.
+        # Real anchoring happens automatically when decisions are created through the UI.
+        # Seeded decisions have chain_verified=False and tx_hash=None (honest state).
+        logger.info("Skipped fake blockchain anchors — real anchoring happens on new decisions")
 
         # AI analysis findings
         findings = [

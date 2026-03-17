@@ -25,7 +25,7 @@ Built as a capstone project for the Harvard Extension School course on Innovatio
 ```mermaid
 graph TB
     subgraph Frontend["Frontend (React 19 / Vite 8)"]
-        UI[Glass Morphism UI]
+        UI[Liquid Glass UI]
         WS_CLIENT[WebSocket Client]
     end
 
@@ -1195,7 +1195,7 @@ The frontend will be available at `http://localhost:5173`.
 
 ### Frontend Pages
 
-The frontend consists of 12 pages with dark/light mode glass morphism UI:
+The frontend consists of 12 pages with dark/light mode iOS 26 Liquid Glass UI:
 
 | Page | Route | Description |
 |------|-------|-------------|
@@ -1420,7 +1420,7 @@ All core features are built and deployed:
 - OpenRouter AI analysis with 4-model rotation and rule-based fallback
 - Real-time IoT sensor dashboard with WebSocket feed and anomaly detection
 - PDF audit report export with blockchain proofs
-- 12-page React frontend with dark/light glass morphism UI
+- 12-page React frontend with dark/light iOS 26 Liquid Glass UI
 - 41+ REST API endpoints across 10 router groups
 
 ### Phase 2 -- Public Portal & Compliance

@@ -259,7 +259,26 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <div style={{ marginTop: 28, textAlign: "center" }}>
+        {/* Demo access */}
+        <div style={{ marginTop: 20, textAlign: "center" }}>
+          <button
+            onClick={() => { setEmail("admin@infratrace.io"); setPassword("admin123"); }}
+            style={{
+              width: "100%", padding: "10px", marginBottom: 12,
+              background: "transparent",
+              border: `1px solid ${t.glassBorder}`,
+              borderRadius: 12, color: t.textSecondary, fontSize: 12,
+              cursor: "pointer", fontFamily: "inherit",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = t.accent; e.currentTarget.style.color = t.accent; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = t.glassBorder; e.currentTarget.style.color = t.textSecondary; }}
+          >
+            Try Demo (auto-fill credentials)
+          </button>
+        </div>
+
+        <div style={{ marginTop: 12, textAlign: "center" }}>
           <p style={{ fontSize: 12, color: t.textSecondary, lineHeight: 1.6, margin: 0 }}>
             Blockchain-verified decision audit trail
           </p>
