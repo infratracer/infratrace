@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, Numeric, String
-from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
@@ -20,36 +19,14 @@ class DecisionRecord(Base):
         UUID(as_uuid=True), ForeignKey("projects.id"), nullable=False, index=True
     )
     sequence_number: Mapped[int] = mapped_column(Integer, nullable=False)
-    decision_type: Mapped[str] = mapped_column(
-        SAEnum(
-            "scope_change",
-            "cost_revision",
-            "assumption_change",
-            "contractor_change",
-            "schedule_change",
-            "risk_acceptance",
-            "approval",
-            name="decision_type",
-            create_constraint=True,
-        ),
-        nullable=False,
-    )
+    decision_type: Mapped[str] = mapped_column(String(100), nullable=False)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=False)
     justification: Mapped[str] = mapped_column(String, nullable=False)
     assumptions: Mapped[dict | None] = mapped_column(JSONB)
     cost_impact: Mapped[float | None] = mapped_column(Numeric(15, 2))
     schedule_impact_days: Mapped[int | None] = mapped_column(Integer)
-    risk_level: Mapped[str | None] = mapped_column(
-        SAEnum(
-            "low",
-            "medium",
-            "high",
-            "critical",
-            name="risk_level",
-            create_constraint=True,
-        )
-    )
+    risk_level: Mapped[str | None] = mapped_column(String(50))
     approved_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id")
     )

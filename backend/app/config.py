@@ -33,7 +33,7 @@ class Settings(BaseSettings):
 
     # Seed
     SEED_ADMIN_PASSWORD: str = "admin123"
-    SEED_DEMO_PASSWORD: str = "demo123"
+    SEED_DEMO_PASSWORD: str = "demo1234"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

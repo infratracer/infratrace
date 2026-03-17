@@ -5,16 +5,14 @@ from pydantic import BaseModel, Field
 
 
 class DecisionCreate(BaseModel):
-    decision_type: str = Field(
-        pattern="^(scope_change|cost_revision|assumption_change|contractor_change|schedule_change|risk_acceptance|approval)$"
-    )
+    decision_type: str = Field(max_length=100)
     title: str = Field(max_length=500)
     description: str
     justification: str
     assumptions: dict | None = None
     cost_impact: float | None = None
     schedule_impact_days: int | None = None
-    risk_level: str | None = Field(None, pattern="^(low|medium|high|critical)$")
+    risk_level: str | None = Field(None, max_length=50)
     approved_by: str | None = None
     supporting_docs: dict | None = None
     triggered_by_sensor: uuid.UUID | None = None
