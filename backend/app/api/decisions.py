@@ -62,6 +62,9 @@ async def create_decision(
 
     created_at = datetime.now(timezone.utc)
 
+    # approved_by: use current user's ID (the person submitting is the approver)
+    approver_id = current_user.id
+
     record_hash = compute_hash(
         project_id=project_id,
         sequence_number=sequence_number,
@@ -70,7 +73,7 @@ async def create_decision(
         description=body.description,
         justification=body.justification,
         cost_impact=body.cost_impact,
-        approved_by=body.approved_by,
+        approved_by=approver_id,
         created_at=created_at,
         previous_hash=previous_hash,
     )
@@ -86,7 +89,7 @@ async def create_decision(
         cost_impact=body.cost_impact,
         schedule_impact_days=body.schedule_impact_days,
         risk_level=body.risk_level,
-        approved_by=body.approved_by,
+        approved_by=approver_id,
         created_by=current_user.id,
         supporting_docs=body.supporting_docs,
         previous_hash=previous_hash,

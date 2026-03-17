@@ -15,7 +15,7 @@ class DecisionCreate(BaseModel):
     cost_impact: float | None = None
     schedule_impact_days: int | None = None
     risk_level: str | None = Field(None, pattern="^(low|medium|high|critical)$")
-    approved_by: uuid.UUID | None = None
+    approved_by: str | None = None
     supporting_docs: dict | None = None
     triggered_by_sensor: uuid.UUID | None = None
 

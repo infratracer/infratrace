@@ -17,7 +17,6 @@ const decisionSchema = z.object({
   justification: z.string().min(20, "Justification must be at least 20 characters"),
   cost_impact: z.coerce.number().default(0),
   risk_level: z.string().optional(),
-  approved_by: z.string().min(1, "Required"),
 });
 
 type SubmitPhase = "idle" | "hashing" | "chaining" | "anchoring" | "done";
@@ -51,13 +50,12 @@ export default function LogDecisionPage() {
       title: "",
       description: "",
       justification: "",
-      approved_by: user?.full_name ?? "",
       cost_impact: 0,
       risk_level: "",
     },
   });
 
-  const onSubmit = async (data: { decision_type: string; title: string; description: string; justification: string; cost_impact?: number; risk_level?: string; approved_by: string }) => {
+  const onSubmit = async (data: { decision_type: string; title: string; description: string; justification: string; cost_impact?: number; risk_level?: string }) => {
     if (!id) return;
     setError("");
 
@@ -272,17 +270,10 @@ export default function LogDecisionPage() {
               </div>
             </div>
 
-            {/* Approved By */}
-            <div>
-              <label style={{ ...overline, display: "block", marginBottom: 6 }}>Approved By</label>
-              <input
-                {...register("approved_by")}
-                placeholder="Name of approver"
-                style={inputStyle}
-              />
-              {errors.approved_by?.message && (
-                <p style={{ fontSize: 11, color: t.neonRed, marginTop: 4 }}>{errors.approved_by.message}</p>
-              )}
+            {/* Approved by current user — shown as info, not editable */}
+            <div style={{ padding: "10px 14px", background: t.bgInput, borderRadius: 10, border: `1px solid ${t.glassBorder}` }}>
+              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: t.textMuted }}>Approved By</span>
+              <div style={{ fontSize: 13, color: t.textPrimary, marginTop: 4 }}>{user?.full_name} ({user?.role})</div>
             </div>
           </div>
         </div>
