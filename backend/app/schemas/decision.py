@@ -31,6 +31,7 @@ class DecisionResponse(BaseModel):
     schedule_impact_days: int | None = None
     risk_level: str | None = None
     approved_by: uuid.UUID | None = None
+    approved_by_name: str | None = None
     created_by: uuid.UUID
     supporting_docs: dict | None = None
     previous_hash: str

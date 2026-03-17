@@ -32,6 +32,48 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+_user_name_cache: dict[str, str] = {}
+
+
+async def _resolve_user_name(db: AsyncSession, user_id: uuid.UUID | None) -> str | None:
+    if user_id is None:
+        return None
+    key = str(user_id)
+    if key in _user_name_cache:
+        return _user_name_cache[key]
+    result = await db.execute(select(User.full_name).where(User.id == user_id))
+    name = result.scalar_one_or_none()
+    if name:
+        _user_name_cache[key] = name
+    return name
+
+
+async def _build_response(d: DecisionRecord, db: AsyncSession) -> DecisionResponse:
+    return DecisionResponse(
+        id=d.id,
+        project_id=d.project_id,
+        sequence_number=d.sequence_number,
+        decision_type=d.decision_type,
+        title=d.title,
+        description=d.description,
+        justification=d.justification,
+        assumptions=d.assumptions,
+        cost_impact=float(d.cost_impact) if d.cost_impact is not None else None,
+        schedule_impact_days=d.schedule_impact_days,
+        risk_level=d.risk_level,
+        approved_by=d.approved_by,
+        approved_by_name=await _resolve_user_name(db, d.approved_by),
+        created_by=d.created_by,
+        supporting_docs=d.supporting_docs,
+        previous_hash=d.previous_hash,
+        record_hash=d.record_hash,
+        tx_hash=d.tx_hash,
+        block_number=d.block_number,
+        chain_verified=d.chain_verified,
+        triggered_by_sensor=d.triggered_by_sensor,
+        created_at=d.created_at,
+    )
+
 
 @router.post(
     "/projects/{project_id}/decisions",
@@ -45,10 +87,7 @@ async def create_decision(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_roles("admin", "project_manager")),
 ) -> DecisionResponse:
-    """Create a new decision record — the CRITICAL endpoint.
-
-    This is append-only. No edits or deletions are ever permitted.
-    """
+    """Create a new decision record. Append-only — no edits or deletions permitted."""
     await require_project_access(project_id, current_user, db, required_roles=["pm"])
 
     result = await db.execute(select(Project).where(Project.id == project_id))
@@ -59,10 +98,7 @@ async def create_decision(
     await acquire_project_lock(db, project_id)
 
     previous_hash, sequence_number = await get_previous_hash(db, project_id)
-
     created_at = datetime.now(timezone.utc)
-
-    # approved_by: use current user's ID (the person submitting is the approver)
     approver_id = current_user.id
 
     record_hash = compute_hash(
@@ -112,6 +148,9 @@ async def create_decision(
             "project_id": str(project_id),
             "sequence": sequence_number,
             "type": body.decision_type,
+            "cost_impact": body.cost_impact,
+            "risk_level": body.risk_level,
+            "hash": record_hash[:16],
         },
     )
 
@@ -119,9 +158,7 @@ async def create_decision(
 
     logger.info(
         "Decision #%d created for project %s (hash=%s)",
-        sequence_number,
-        project_id,
-        record_hash[:16],
+        sequence_number, project_id, record_hash[:16],
     )
 
     # Anchor to Polygon Amoy in background (non-blocking)
@@ -136,29 +173,7 @@ async def create_decision(
 
     background_tasks.add_task(_anchor_bg)
 
-    return DecisionResponse(
-        id=decision.id,
-        project_id=decision.project_id,
-        sequence_number=decision.sequence_number,
-        decision_type=decision.decision_type,
-        title=decision.title,
-        description=decision.description,
-        justification=decision.justification,
-        assumptions=decision.assumptions,
-        cost_impact=float(decision.cost_impact) if decision.cost_impact is not None else None,
-        schedule_impact_days=decision.schedule_impact_days,
-        risk_level=decision.risk_level,
-        approved_by=decision.approved_by,
-        created_by=decision.created_by,
-        supporting_docs=decision.supporting_docs,
-        previous_hash=decision.previous_hash,
-        record_hash=decision.record_hash,
-        tx_hash=decision.tx_hash,
-        block_number=decision.block_number,
-        chain_verified=decision.chain_verified,
-        triggered_by_sensor=decision.triggered_by_sensor,
-        created_at=decision.created_at,
-    )
+    return await _build_response(decision, db)
 
 
 @router.get("/projects/{project_id}/decisions", response_model=list[DecisionResponse])
@@ -186,32 +201,7 @@ async def list_decisions(
     result = await db.execute(query)
     decisions = result.scalars().all()
 
-    return [
-        DecisionResponse(
-            id=d.id,
-            project_id=d.project_id,
-            sequence_number=d.sequence_number,
-            decision_type=d.decision_type,
-            title=d.title,
-            description=d.description,
-            justification=d.justification,
-            assumptions=d.assumptions,
-            cost_impact=float(d.cost_impact) if d.cost_impact is not None else None,
-            schedule_impact_days=d.schedule_impact_days,
-            risk_level=d.risk_level,
-            approved_by=d.approved_by,
-            created_by=d.created_by,
-            supporting_docs=d.supporting_docs,
-            previous_hash=d.previous_hash,
-            record_hash=d.record_hash,
-            tx_hash=d.tx_hash,
-            block_number=d.block_number,
-            chain_verified=d.chain_verified,
-            triggered_by_sensor=d.triggered_by_sensor,
-            created_at=d.created_at,
-        )
-        for d in decisions
-    ]
+    return [await _build_response(d, db) for d in decisions]
 
 
 @router.get("/projects/{project_id}/decisions/timeline", response_model=TimelineResponse)
@@ -241,33 +231,7 @@ async def get_timeline(
             cumulative += float(d.cost_impact)
         cost_trajectory.append(cumulative)
 
-    decision_responses = [
-        DecisionResponse(
-            id=d.id,
-            project_id=d.project_id,
-            sequence_number=d.sequence_number,
-            decision_type=d.decision_type,
-            title=d.title,
-            description=d.description,
-            justification=d.justification,
-            assumptions=d.assumptions,
-            cost_impact=float(d.cost_impact) if d.cost_impact is not None else None,
-            schedule_impact_days=d.schedule_impact_days,
-            risk_level=d.risk_level,
-            approved_by=d.approved_by,
-            created_by=d.created_by,
-            supporting_docs=d.supporting_docs,
-            previous_hash=d.previous_hash,
-            record_hash=d.record_hash,
-            tx_hash=d.tx_hash,
-            block_number=d.block_number,
-            chain_verified=d.chain_verified,
-            triggered_by_sensor=d.triggered_by_sensor,
-            created_at=d.created_at,
-        )
-        for d in decisions
-    ]
-
+    decision_responses = [await _build_response(d, db) for d in decisions]
     return TimelineResponse(decisions=decision_responses, cost_trajectory=cost_trajectory)
 
 
@@ -290,26 +254,4 @@ async def get_decision(
     if decision is None:
         raise HTTPException(status_code=404, detail="Decision not found")
 
-    return DecisionResponse(
-        id=decision.id,
-        project_id=decision.project_id,
-        sequence_number=decision.sequence_number,
-        decision_type=decision.decision_type,
-        title=decision.title,
-        description=decision.description,
-        justification=decision.justification,
-        assumptions=decision.assumptions,
-        cost_impact=float(decision.cost_impact) if decision.cost_impact is not None else None,
-        schedule_impact_days=decision.schedule_impact_days,
-        risk_level=decision.risk_level,
-        approved_by=decision.approved_by,
-        created_by=decision.created_by,
-        supporting_docs=decision.supporting_docs,
-        previous_hash=decision.previous_hash,
-        record_hash=decision.record_hash,
-        tx_hash=decision.tx_hash,
-        block_number=decision.block_number,
-        chain_verified=decision.chain_verified,
-        triggered_by_sensor=decision.triggered_by_sensor,
-        created_at=decision.created_at,
-    )
+    return await _build_response(decision, db)

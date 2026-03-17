@@ -121,7 +121,7 @@ export default function DecisionDetailPage() {
             )}>{d.risk_level}</span>
           </div>
           <h1 style={{ fontSize: 20, fontWeight: 700, color: t.textPrimary, margin: 0 }}>{d.title}</h1>
-          <p style={{ fontSize: 11, marginTop: 4, color: t.textMuted }}>{formatDate(d.created_at)} &middot; Approved by {d.approved_by}</p>
+          <p style={{ fontSize: 11, marginTop: 4, color: t.textMuted }}>{formatDate(d.created_at)} &middot; Approved by {(d as any).approved_by_name || d.approved_by}</p>
         </div>
         {d.cost_impact !== 0 && (
           <div style={{ textAlign: "right" }}>
