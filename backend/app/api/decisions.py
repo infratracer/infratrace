@@ -161,24 +161,28 @@ async def create_decision(
         sequence_number, project_id, record_hash[:16],
     )
 
-    # Anchor to Polygon Amoy in background (non-blocking)
+    # Anchor to Polygon Amoy — fire-and-forget async task
+    # Using asyncio.create_task instead of BackgroundTasks because Railway
+    # kills containers aggressively and BackgroundTasks get interrupted.
     _decision_id = decision.id
     _seq = sequence_number
     _hash = record_hash
+    _project_id = project_id
 
-    async def _anchor_bg() -> None:
+    async def _anchor_task() -> None:
         try:
             from app.database import async_session
             async with async_session() as bg_db:
-                result = await anchor_decision(bg_db, _decision_id, project_id, _seq, _hash)
+                result = await anchor_decision(bg_db, _decision_id, _project_id, _seq, _hash)
                 if result:
-                    logger.info("Background anchor completed: tx=%s block=%s", result.tx_hash, result.block_number)
+                    logger.info("Anchor completed: tx=%s block=%s", result.tx_hash, result.block_number)
                 else:
-                    logger.warning("Background anchor returned None for decision %s", _decision_id)
+                    logger.warning("Anchor returned None for decision %s", _decision_id)
         except Exception as e:
-            logger.error("Background anchor FAILED for decision %s: %s", _decision_id, e, exc_info=True)
+            logger.error("Anchor FAILED for decision %s: %s", _decision_id, e, exc_info=True)
 
-    background_tasks.add_task(_anchor_bg)
+    import asyncio
+    asyncio.create_task(_anchor_task())
 
     return await _build_response(decision, db)
 

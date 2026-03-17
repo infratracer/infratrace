@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -33,7 +32,11 @@ async def anchor_decision(
     sequence_number: int,
     record_hash: str,
 ) -> BlockchainAnchor | None:
-    """Anchor a decision hash on Polygon Amoy. Non-blocking background task."""
+    """Anchor a decision hash on Polygon Amoy.
+
+    Submits the transaction and waits for receipt in a thread pool
+    to avoid blocking the async event loop.
+    """
     if not settings.POLYGON_PRIVATE_KEY or not settings.CONTRACT_ADDRESS:
         logger.info("Blockchain anchoring skipped — missing POLYGON_PRIVATE_KEY or CONTRACT_ADDRESS")
         return None
@@ -60,12 +63,10 @@ async def anchor_decision(
             logger.error("Invalid hex conversion for project %s or hash %s: %s", project_id, record_hash[:16], e)
             return None
 
-        # Run blocking web3 calls in thread pool to avoid blocking the event loop
-        def _build_and_send():
+        # Run ALL blocking web3 calls in a thread pool
+        def _submit_and_wait():
             built_tx = contract.functions.anchorDecision(
-                project_bytes,
-                sequence_number,
-                hash_bytes,
+                project_bytes, sequence_number, hash_bytes,
             ).build_transaction({
                 "from": account.address,
                 "nonce": w3.eth.get_transaction_count(account.address),
@@ -75,45 +76,49 @@ async def anchor_decision(
             })
             signed = account.sign_transaction(built_tx)
             raw_tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-            tx_receipt = w3.eth.wait_for_transaction_receipt(raw_tx_hash, timeout=120)
+            tx_receipt = w3.eth.wait_for_transaction_receipt(raw_tx_hash, timeout=60)
             return raw_tx_hash.hex(), tx_receipt
 
-        tx_hex, receipt = await asyncio.to_thread(_build_and_send)
+        logger.info("Submitting anchor for decision #%d to Polygon...", sequence_number)
+        tx_hex, receipt = await asyncio.to_thread(_submit_and_wait)
+        tx_hash_full = f"0x{tx_hex}" if not tx_hex.startswith("0x") else tx_hex
 
+        logger.info("Polygon tx confirmed: %s block=%d gas=%d",
+                     tx_hash_full, receipt["blockNumber"], receipt["gasUsed"])
+
+        # Save anchor record
         anchor = BlockchainAnchor(
             decision_id=decision_id,
             record_hash=record_hash,
-            tx_hash=f"0x{tx_hex}" if not tx_hex.startswith("0x") else tx_hex,
+            tx_hash=tx_hash_full,
+            block_number=receipt["blockNumber"],
             network="amoy",
-            status="pending",
+            status="confirmed",
+            gas_used=receipt["gasUsed"],
+            confirmed_at=datetime.now(timezone.utc),
         )
         db.add(anchor)
-        anchor.block_number = receipt["blockNumber"]
-        anchor.gas_used = receipt["gasUsed"]
-        anchor.status = "confirmed"
-        anchor.confirmed_at = datetime.now(timezone.utc)
 
+        # Update the decision record with tx_hash
         decision_result = await db.execute(
             select(DecisionRecord).where(DecisionRecord.id == decision_id)
         )
         decision = decision_result.scalar_one_or_none()
         if decision:
-            decision.tx_hash = anchor.tx_hash
-            decision.block_number = anchor.block_number
+            decision.tx_hash = tx_hash_full
+            decision.block_number = receipt["blockNumber"]
             decision.chain_verified = True
+            logger.info("Decision #%d updated with tx_hash=%s", sequence_number, tx_hash_full)
+        else:
+            logger.error("Decision %s not found for tx_hash update", decision_id)
 
         await db.commit()
+        logger.info("Anchor committed to database for decision #%d", sequence_number)
 
-        logger.info(
-            "Decision #%d anchored on-chain: tx=%s block=%d",
-            sequence_number,
-            anchor.tx_hash,
-            anchor.block_number,
-        )
         return anchor
 
     except Exception as e:
-        logger.error("Blockchain anchoring failed for decision %s: %s", decision_id, e)
+        logger.error("Blockchain anchoring failed for decision %s: %s", decision_id, e, exc_info=True)
         try:
             anchor = BlockchainAnchor(
                 decision_id=decision_id,
@@ -159,9 +164,7 @@ async def verify_onchain(
 
         def _verify():
             return contract.functions.verifyDecision(
-                project_bytes,
-                sequence_number,
-                hash_bytes,
+                project_bytes, sequence_number, hash_bytes,
             ).call()
 
         result = await asyncio.to_thread(_verify)
