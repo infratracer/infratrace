@@ -167,9 +167,16 @@ async def create_decision(
     _hash = record_hash
 
     async def _anchor_bg() -> None:
-        from app.database import async_session
-        async with async_session() as bg_db:
-            await anchor_decision(bg_db, _decision_id, project_id, _seq, _hash)
+        try:
+            from app.database import async_session
+            async with async_session() as bg_db:
+                result = await anchor_decision(bg_db, _decision_id, project_id, _seq, _hash)
+                if result:
+                    logger.info("Background anchor completed: tx=%s block=%s", result.tx_hash, result.block_number)
+                else:
+                    logger.warning("Background anchor returned None for decision %s", _decision_id)
+        except Exception as e:
+            logger.error("Background anchor FAILED for decision %s: %s", _decision_id, e, exc_info=True)
 
     background_tasks.add_task(_anchor_bg)
 
