@@ -157,11 +157,14 @@ async def verify_onchain(
         except ValueError as e:
             return {"verified": False, "reason": f"Invalid hex data: {e}"}
 
-        result = contract.functions.verifyDecision(
-            project_bytes,
-            sequence_number,
-            hash_bytes,
-        ).call()
+        def _verify():
+            return contract.functions.verifyDecision(
+                project_bytes,
+                sequence_number,
+                hash_bytes,
+            ).call()
+
+        result = await asyncio.to_thread(_verify)
 
         return {"verified": result, "contract": settings.CONTRACT_ADDRESS}
 

@@ -60,12 +60,16 @@ async def verify_blockchain(
 
     for decision in decisions:
         if decision.tx_hash:
-            result = await verify_onchain(
-                project_id, decision.sequence_number, decision.record_hash
-            )
-            if result.get("verified"):
-                verified_count += 1
-            else:
+            try:
+                result = await verify_onchain(
+                    project_id, decision.sequence_number, decision.record_hash
+                )
+                if result.get("verified"):
+                    verified_count += 1
+                else:
+                    failed.append(decision.sequence_number)
+            except Exception as e:
+                logger.error("Blockchain verify failed for #%d: %s", decision.sequence_number, e)
                 failed.append(decision.sequence_number)
 
     await log_action(
