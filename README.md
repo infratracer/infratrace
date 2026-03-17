@@ -30,7 +30,7 @@ graph TB
     end
 
     subgraph Backend["Backend (FastAPI / Python 3.11)"]
-        API[REST API - 55+ Endpoints]
+        API[REST API - 60+ Endpoints]
         AUTH[JWT Auth + RBAC]
         ORG[Multi-Tenant Orgs]
         HASH[SHA-256 Hash Chain]
@@ -113,16 +113,16 @@ Everyone works from the same verified truth. Nobody gets a special version of ev
 
 ### Three technologies, explained simply
 
-InfraTrace combines three technologies. Here's what each one does in plain language:
+InfraTrace combines three technologies — all operational in production at [infratrace.xyz](https://infratrace.xyz):
 
-**Blockchain** (Polygon network)
-> Every decision record gets a digital fingerprint. That fingerprint is published to a public ledger that nobody controls — like stamping a document at a notary office, except the notary is a global computer network that runs 24/7 and can't be bribed or shut down. Anyone, anywhere, at any time can verify that a record is genuine and hasn't been changed.
+**Blockchain** (Polygon Amoy — live on-chain)
+> Every decision record gets a SHA-256 fingerprint. That fingerprint is published to the Polygon blockchain via smart contract [`0x393a2A33...aFad1355`](https://amoy.polygonscan.com/address/0x393a2A33aA934CB18d20Fa3C0624399AaFad1355) — a public ledger that nobody controls. Like stamping a document at a notary office, except the notary is a global computer network that runs 24/7 and can't be bribed or shut down. Anyone, anywhere, at any time can verify that a record is genuine and hasn't been changed.
 
-**AI Analysis** (powered by large language models)
-> The system watches the full stream of decisions and flags things that look wrong — a cost that doubled overnight with no explanation, a single person approving every decision with no oversight, budget assumptions that contradict what sensors are reporting on the ground. It doesn't make judgments. It raises questions that humans should be asking.
+**AI Analysis** (OpenRouter — 4-model rotation with rule-based fallback)
+> The system watches the full stream of decisions using large language models (Llama 3.3 70B, Mistral Small 3.1, Gemma 3 27B, Qwen3 4B) and flags things that look wrong — a cost that doubled overnight with no explanation, a single person approving every decision with no oversight, budget assumptions that contradict what sensors are reporting on the ground. When AI models are rate-limited, a rule-based engine takes over automatically. It doesn't make judgments. It raises questions that humans should be asking.
 
-**IoT Sensor Monitoring** (real-time data feeds)
-> Infrastructure projects make assumptions: "Steel will cost $1,100 per tonne." "Delivery will take 14 days." "Rainfall won't exceed 30mm." InfraTrace connects to real-world data streams — commodity prices, weather stations, delivery tracking — and watches whether reality matches those assumptions. When it doesn't, the system alerts project managers before small problems become expensive ones.
+**IoT Sensor Monitoring** (real-time data feeds + live market APIs)
+> Infrastructure projects make assumptions: "Steel will cost $1,100 per tonne." "Delivery will take 14 days." "Rainfall won't exceed 30mm." InfraTrace connects to real-world data streams — MetalpriceAPI for commodity prices, OpenWeatherMap for weather, plus configurable per-project sensors — and watches whether reality matches those assumptions. When it doesn't, the system alerts project managers before small problems become expensive ones.
 
 ### What this means in practice
 
@@ -886,7 +886,7 @@ erDiagram
 
 ## API Reference
 
-InfraTrace exposes 55+ REST endpoints organized into 15 router groups, plus one WebSocket endpoint.
+InfraTrace exposes 60+ REST endpoints organized into 15 router groups, plus one WebSocket endpoint.
 
 ### Endpoint Groups
 
@@ -1035,7 +1035,7 @@ GET /api/v1/public/verify/a3f2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7
   "chain_verified": true,
   "blockchain_verification": {
     "verified": true,
-    "contract": "0x1234567890AbCdEf1234567890aBcDeF12345678"
+    "contract": "0x393a2A33aA934CB18d20Fa3C0624399AaFad1355"
   }
 }
 ```
@@ -1195,16 +1195,17 @@ The frontend will be available at `http://localhost:5173`.
 
 ### Frontend Pages
 
-The frontend consists of 19 pages with dark/light mode iOS 26 Liquid Glass UI:
+The frontend consists of 20+ pages with dark/light mode iOS 26 Liquid Glass UI:
 
 | Page | Route | Description |
 |------|-------|-------------|
+| Landing | `/` | Marketing page with Liquid Glass design, storytelling, scroll animations |
 | Login | `/login` | Email/password auth with "Try Demo" button |
 | Register | `/register` | Self-service account creation |
 | Forgot Password | `/forgot-password` | Password reset request |
 | Reset Password | `/reset-password` | Set new password via token |
 | Accept Invite | `/invite/:token` | Accept email invitation + set password |
-| Dashboard | `/` | Project overview, metrics, cost charts, sensor grid, welcome banner |
+| Dashboard | `/dashboard` | Project overview, metrics, cost charts, sensor grid, welcome banner |
 | Timeline | `/project/:id/timeline` | Chronological decision chain with cost trajectory |
 | Decision Detail | `/project/:id/decision/:did` | Full record with hash chain position + blockchain proof |
 | Log Decision | `/project/:id/log` | Append-only form with configurable types from project settings |
@@ -1397,7 +1398,7 @@ gantt
     IoT simulator + WebSocket   :done, p1e, 2025-12, 2026-01
     AI analysis (OpenRouter)    :done, p1f, 2026-01, 2026-02
     PDF report export           :done, p1g, 2026-02, 2026-02
-    Frontend (19 pages)         :done, p1h, 2025-11, 2026-03
+    Frontend (20+ pages)         :done, p1h, 2025-11, 2026-03
     Railway + Vercel deploy     :done, p1i, 2026-02, 2026-03
 
     section Phase 2 - Platform (Complete)
@@ -1408,6 +1409,8 @@ gantt
     Document uploads            :done, p2e, 2026-03, 2026-03
     Full-text search            :done, p2f, 2026-03, 2026-03
     Password reset flow         :done, p2g, 2026-03, 2026-03
+    Marketing landing page      :done, p2h, 2026-03, 2026-03
+    Real data feeds (Metal/WX)  :done, p2i, 2026-03, 2026-03
 
     section Phase 3 - Scale
     Email notifications         :p3a, 2026-04, 2026-05
@@ -1436,8 +1439,8 @@ All core features are built and deployed:
 - OpenRouter AI analysis with 4-model rotation and rule-based fallback
 - Real-time IoT sensor dashboard with WebSocket feed and anomaly detection
 - PDF audit report export with blockchain proofs
-- 19-page React frontend with dark/light iOS 26 Liquid Glass UI
-- 55+ REST API endpoints across 15 router groups
+- 20+-page React frontend with dark/light iOS 26 Liquid Glass UI
+- 60+ REST API endpoints across 15 router groups
 
 ### Phase 2 -- Platform (Complete)
 
@@ -1693,7 +1696,7 @@ infratrace/
 │   └── railway.toml                # Railway deployment config
 ├── frontend/
 │   ├── src/
-│   │   ├── pages/                  # 19 page components
+│   │   ├── pages/                  # 20+ page components
 │   │   │   ├── LoginPage.tsx       # Auth with forgot/register links
 │   │   │   ├── RegisterPage.tsx    # Self-service registration
 │   │   │   ├── ForgotPasswordPage.tsx
@@ -1723,7 +1726,7 @@ infratrace/
 │   │   ├── types/                  # TypeScript type definitions
 │   │   ├── utils/                  # Format, risk, constants
 │   │   ├── config/                 # Theme + environment config
-│   │   ├── App.tsx                 # Router (19 routes, code-split)
+│   │   ├── App.tsx                 # Router (20+ routes, code-split)
 │   │   └── main.tsx                # Entry point
 │   ├── Dockerfile                  # Multi-stage build (node + nginx)
 │   ├── nginx.conf                  # SPA routing + gzip + caching
