@@ -85,7 +85,7 @@ async def analyse_project(
             "title": d.title,
             "cost_impact": float(d.cost_impact) if d.cost_impact else 0,
             "risk": d.risk_level,
-            "approved_by": d.approved_by,
+            "approved_by": str(d.approved_by) if d.approved_by else None,
         }
         for d in decisions
     ]
