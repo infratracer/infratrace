@@ -5,8 +5,10 @@ Graceful degradation: if RESEND_API_KEY is not configured, emails are
 logged but not sent — the application continues to function normally.
 """
 
+import logging
 import httpx
-from loguru import logger
+
+logger = logging.getLogger(__name__)
 
 from app.config import settings
 
