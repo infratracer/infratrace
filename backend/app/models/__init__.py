@@ -9,6 +9,8 @@ from app.models.analysis import AIAnalysisResult
 from app.models.blockchain import BlockchainAnchor
 from app.models.audit import AuditLog
 from app.models.document import Document
+from app.models.approval import DecisionApproval
+from app.models.webhook import WebhookSubscription
 
 __all__ = [
     "User",
@@ -23,4 +25,6 @@ __all__ = [
     "BlockchainAnchor",
     "AuditLog",
     "Document",
+    "DecisionApproval",
+    "WebhookSubscription",
 ]

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getSensorConfigs, createSensorConfig, updateSensorConfig, deleteSensorConfig, type SensorConfig } from "../api/projectSensors";
 import { useTheme } from "../hooks/useTheme";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { useToastStore } from "../store/toastStore";
 
 const DATA_SOURCE_OPTIONS = [
@@ -32,6 +33,7 @@ const EMPTY_FORM = {
 export default function SensorConfigPage() {
   const { id } = useParams<{ id: string }>();
   const t = useTheme();
+  const isMobile = useIsMobile();
   const addToast = useToastStore((s) => s.addToast);
   const [configs, setConfigs] = useState<SensorConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -151,7 +153,7 @@ export default function SensorConfigPage() {
       {showForm && (
         <div style={glass}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12 }}>
               <div><div style={overline}>Label</div><input style={inputStyle} value={form.label} onChange={(e) => setForm(f => ({ ...f, label: e.target.value, name: e.target.value.toLowerCase().replace(/\s+/g, "_") }))} placeholder="Steel Price" /></div>
               <div><div style={overline}>Unit</div><input style={inputStyle} value={form.unit} onChange={(e) => setForm(f => ({ ...f, unit: e.target.value }))} placeholder="$/tonne" /></div>
               <div><div style={overline}>Category</div>
@@ -161,7 +163,7 @@ export default function SensorConfigPage() {
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
               <div><div style={overline}>Data Source</div>
                 <select style={inputStyle} value={form.data_source} onChange={(e) => setForm(f => ({ ...f, data_source: e.target.value }))}>
                   {DATA_SOURCE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -180,7 +182,7 @@ export default function SensorConfigPage() {
             </div>
 
             {form.data_source === "api" && form.provider === "openweathermap" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
                 <div><div style={overline}>City</div><input style={inputStyle} value={form.source_city} onChange={(e) => setForm(f => ({ ...f, source_city: e.target.value }))} placeholder="Perth,AU" /></div>
                 <div><div style={overline}>Field</div>
                   <select style={inputStyle} value={form.source_field} onChange={(e) => setForm(f => ({ ...f, source_field: e.target.value }))}>
@@ -194,21 +196,21 @@ export default function SensorConfigPage() {
             )}
 
             {form.data_source === "api" && form.provider === "metalpriceapi" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12 }}>
                 <div><div style={overline}>Base Currency</div><input style={inputStyle} value={form.source_base} onChange={(e) => setForm(f => ({ ...f, source_base: e.target.value }))} /></div>
                 <div><div style={overline}>Metal Symbol</div><input style={inputStyle} value={form.source_symbol} onChange={(e) => setForm(f => ({ ...f, source_symbol: e.target.value }))} placeholder="CU, FE, AL" /></div>
                 <div><div style={overline}>Multiplier</div><input style={inputStyle} type="number" value={form.source_multiplier} onChange={(e) => setForm(f => ({ ...f, source_multiplier: e.target.value }))} /></div>
               </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 12 }}>
               <div><div style={overline}>Base Value</div><input style={inputStyle} type="number" value={form.base_value} onChange={(e) => setForm(f => ({ ...f, base_value: e.target.value }))} placeholder="1000" /></div>
               <div><div style={overline}>Range Min</div><input style={inputStyle} type="number" value={form.range_min} onChange={(e) => setForm(f => ({ ...f, range_min: e.target.value }))} /></div>
               <div><div style={overline}>Range Max</div><input style={inputStyle} type="number" value={form.range_max} onChange={(e) => setForm(f => ({ ...f, range_max: e.target.value }))} /></div>
               <div><div style={overline}>Noise</div><input style={inputStyle} type="number" value={form.noise_factor} onChange={(e) => setForm(f => ({ ...f, noise_factor: e.target.value }))} /></div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
               <div><div style={overline}>Warning Threshold</div><input style={inputStyle} type="number" value={form.warning_threshold} onChange={(e) => setForm(f => ({ ...f, warning_threshold: e.target.value }))} /></div>
               <div><div style={overline}>Alert Threshold (max)</div><input style={inputStyle} type="number" value={form.threshold_max} onChange={(e) => setForm(f => ({ ...f, threshold_max: e.target.value }))} /></div>
             </div>

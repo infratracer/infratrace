@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.core.rate_limit import RateLimitMiddleware
+from app.middleware.rate_limiter import RateLimitMiddleware
 
 logging.basicConfig(
     level=logging.DEBUG if settings.ENVIRONMENT == "development" else logging.INFO,
@@ -39,8 +39,10 @@ app = FastAPI(
     redoc_url="/redoc" if settings.ENVIRONMENT == "development" else None,
 )
 
-# CORS: allow all origins. Auth is handled by JWT, not origin checking.
-app.add_middleware(RateLimitMiddleware, limit=100, window=60)
+# Middleware order matters: Starlette processes them in reverse registration order.
+# Register RateLimitMiddleware BEFORE CORSMiddleware so CORS runs first (outermost),
+# and rate limiting runs on the inner pass — after CORS headers are already set.
+app.add_middleware(RateLimitMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -66,6 +68,9 @@ from app.api import project_sensors as project_sensors_router
 from app.api import documents as documents_router
 from app.api import search as search_router
 from app.api import project_settings as project_settings_router
+from app.api import approvals as approvals_router
+from app.api import export as export_router
+from app.api import webhooks as webhooks_router
 from app.websocket.sensor_feed import router as ws_router
 
 app.include_router(auth_router.router, prefix="/api/v1/auth", tags=["auth"])
@@ -83,6 +88,9 @@ app.include_router(onboarding_router.router, prefix="/api/v1", tags=["onboarding
 app.include_router(public_router.router, prefix="/api/v1", tags=["public"])
 app.include_router(search_router.router, prefix="/api/v1", tags=["search"])
 app.include_router(project_settings_router.router, prefix="/api/v1", tags=["settings"])
+app.include_router(approvals_router.router, prefix="/api/v1", tags=["approvals"])
+app.include_router(export_router.router, prefix="/api/v1", tags=["export"])
+app.include_router(webhooks_router.router, prefix="/api/v1", tags=["webhooks"])
 app.include_router(ws_router)
 
 

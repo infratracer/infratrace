@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { useToastStore } from "../store/toastStore";
 import { createSensorConfig } from "../api/projectSensors";
 import { createAssumption } from "../api/assumptions";
@@ -20,6 +21,7 @@ export default function ProjectSetupPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const t = useTheme();
+  const isMobile = useIsMobile();
   const addToast = useToastStore((s) => s.addToast);
   const [step, setStep] = useState(0);
   const [selectedSensors, setSelectedSensors] = useState<Set<string>>(new Set(["steel_price", "copper_price", "labour_rate", "temperature", "rainfall"]));
@@ -110,7 +112,7 @@ export default function ProjectSetupPage() {
 
         {/* Step 0: Sensors */}
         {step === 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
             {SENSOR_TEMPLATES.map((s) => {
               const selected = selectedSensors.has(s.name);
               return (
@@ -132,9 +134,9 @@ export default function ProjectSetupPage() {
         {/* Step 1: Team */}
         {step === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input style={{ ...inputStyle, flex: 1 }} placeholder="user@example.com" value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} />
-              <select style={{ ...inputStyle, width: "auto" }} value={memberRole} onChange={(e) => setMemberRole(e.target.value)}>
+            <div style={{ display: "flex", gap: 8, flexWrap: isMobile ? "wrap" : "nowrap" }}>
+              <input style={{ ...inputStyle, flex: isMobile ? "1 1 100%" : 1 }} placeholder="user@example.com" value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} />
+              <select style={{ ...inputStyle, width: "auto", flex: isMobile ? "1 1 auto" : "none" }} value={memberRole} onChange={(e) => setMemberRole(e.target.value)}>
                 <option value="pm">Project Manager</option>
                 <option value="auditor">Auditor</option>
                 <option value="stakeholder">Stakeholder</option>

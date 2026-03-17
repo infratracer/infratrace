@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     OPENWEATHERMAP_API_KEY: str = ""
     METALPRICEAPI_KEY: str = ""
 
+    # Email (Resend)
+    RESEND_API_KEY: str = ""
+    EMAIL_FROM: str = "InfraTrace <noreply@infratrace.xyz>"
+
     # App
     FRONTEND_URL: str = "http://localhost:5173"
     ENVIRONMENT: str = "development"

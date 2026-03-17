@@ -33,6 +33,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
     if (p.includes("/log")) return "log";
     if (p.includes("/assumptions")) return "assumptions";
     if (p.includes("/reports")) return "reports";
+    if (p === "/map") return "map";
     if (p.includes("/admin/users")) return "users";
     if (p.includes("/admin/audit")) return "audit";
     return "dashboard";
@@ -44,6 +45,7 @@ export default function Sidebar({ open, onClose, isMobile }: SidebarProps) {
 
   const navItems = [
     { id: "dashboard", label: "Dashboard", icon: "\u25A6", path: "/dashboard", disabled: false },
+    { id: "map", label: "Map", icon: "\u25C8", path: "/map", disabled: false },
     { id: "timeline", label: "Timeline", icon: "\u2502", path: `/project/${projectId}/timeline`, disabled: !hasProject },
     { id: "sensors", label: "Sensors", icon: "\u25C9", path: `/project/${projectId}/sensors`, disabled: !hasProject },
     { id: "analysis", label: "AI Analysis", icon: "\u25C7", path: `/project/${projectId}/analysis`, disabled: !hasProject },

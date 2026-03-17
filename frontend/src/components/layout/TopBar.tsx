@@ -40,10 +40,16 @@ export default function TopBar({ title, onMenuClick, showMenu }: TopBarProps) {
         {showMenu && (
           <button onClick={onMenuClick} aria-label="Open menu" style={{
             background: "none", border: "none",
-            color: t.textSecondary, fontSize: 18, cursor: "pointer",
-            padding: "4px 8px", borderRadius: 8,
-            transition: "color 0.2s",
-          }}>{"\u2630"}</button>
+            cursor: "pointer",
+            padding: "6px 8px", borderRadius: 8,
+            transition: "background 0.2s",
+            display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+            gap: 4, width: 32, height: 32,
+          }}>
+            <div style={{ width: 18, height: 2, borderRadius: 1, background: t.textSecondary, transition: "background 0.2s" }} />
+            <div style={{ width: 18, height: 2, borderRadius: 1, background: t.textSecondary, transition: "background 0.2s" }} />
+            <div style={{ width: 18, height: 2, borderRadius: 1, background: t.textSecondary, transition: "background 0.2s" }} />
+          </button>
         )}
         <h2 style={{
           margin: 0, fontSize: 17, fontWeight: 600,

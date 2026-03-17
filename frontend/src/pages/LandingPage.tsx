@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { useEffect, useRef } from "react";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isMobile = useIsMobile();
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export default function LandingPage() {
       `}</style>
 
       {/* Nav */}
-      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: "16px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(10,10,15,0.7)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, padding: isMobile ? "12px 16px" : "16px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(10,10,15,0.7)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <img src="/logo-dark.png" alt="InfraTrace" style={{ height: 32, width: "auto" }} />
         </div>
@@ -110,7 +112,7 @@ export default function LandingPage() {
           <h2 style={{ fontSize: "clamp(24px, 3.5vw, 36px)", fontWeight: 700, margin: 0 }}>Blockchain + AI + IoT</h2>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(${isMobile ? "260px" : "300px"}, 1fr))`, gap: isMobile ? 14 : 20 }}>
           {/* Blockchain */}
           <div className="glass glow-blue" style={{ padding: 32, animation: "float 6s ease infinite" }}>
             <div style={{ fontSize: 32, marginBottom: 16 }}>&#9939;</div>
@@ -164,7 +166,7 @@ export default function LandingPage() {
             { step: "04", title: "AI Analyzes Patterns", desc: "Large language models detect scope creep, cost anomalies, and governance risks across the decision chain.", color: "#FF9F0A" },
             { step: "05", title: "Sensors Keep It Honest", desc: "Real-time data feeds compare market conditions against project assumptions. Anomalies trigger alerts.", color: "#FF453A" },
           ].map((s) => (
-            <div key={s.step} className="glass" style={{ padding: "24px 28px", display: "flex", gap: 20, alignItems: "flex-start" }}>
+            <div key={s.step} className="glass" style={{ padding: isMobile ? "16px 18px" : "24px 28px", display: "flex", gap: isMobile ? 14 : 20, alignItems: "flex-start" }}>
               <div style={{ fontSize: 28, fontWeight: 700, color: s.color, fontFamily: "monospace", flexShrink: 0, lineHeight: 1 }}>{s.step}</div>
               <div>
                 <h3 style={{ fontSize: 16, fontWeight: 600, margin: "0 0 4px" }}>{s.title}</h3>

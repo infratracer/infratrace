@@ -8,6 +8,7 @@ import { DECISION_TYPES, RISK_LEVELS } from "../utils/constants";
 import { getProjectSetting, type SettingOption } from "../api/projectSettings";
 import { useAuthStore } from "../store/authStore";
 import { useTheme } from "../hooks/useTheme";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { useToastStore } from "../store/toastStore";
 
 const decisionSchema = z.object({
@@ -25,6 +26,7 @@ export default function LogDecisionPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const isMobile = useIsMobile();
   const [phase, setPhase] = useState<SubmitPhase>("idle");
   const [newDecisionId, setNewDecisionId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -239,7 +241,7 @@ export default function LogDecisionPage() {
             </div>
 
             {/* Cost Impact + Risk Level */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
               <div>
                 <label style={{ ...overline, display: "block", marginBottom: 6 }}>Cost Impact ($)</label>
                 <input

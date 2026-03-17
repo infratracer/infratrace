@@ -392,7 +392,7 @@ export default function DashboardPage() {
           {/* Sensors */}
           <div>
             <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 10, fontWeight: 500 }}>Live Sensors</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
               {sensorData.map((s, i) => (
                 <div key={i} style={glass({ padding: "12px 14px" })}>
                   <div style={{ fontSize: 11, color: t.textSecondary, marginBottom: 6, fontWeight: 500 }}>{s.name}</div>
@@ -437,6 +437,318 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Enhanced Analytics Section ── */}
+      {decisions.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          {/* Decision Trend Chart — decisions per week over last 8 weeks */}
+          {(() => {
+            const now = new Date();
+            const weeks: { label: string; start: Date; end: Date; count: number }[] = [];
+            for (let i = 7; i >= 0; i--) {
+              const end = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+              const start = new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
+              weeks.push({
+                label: `W${8 - i}`,
+                start,
+                end,
+                count: decisions.filter((d) => {
+                  const dt = new Date(d.created_at);
+                  return dt >= start && dt < end;
+                }).length,
+              });
+            }
+            const maxCount = Math.max(...weeks.map((w) => w.count), 1);
+            const chartW = 100; // SVG viewbox percentage
+            const chartH = 60;
+            const padX = 8;
+            const padY = 6;
+            const usableW = chartW - padX * 2;
+            const usableH = chartH - padY * 2;
+            const points = weeks.map((w, i) => ({
+              x: padX + (i / (weeks.length - 1)) * usableW,
+              y: padY + usableH - (w.count / maxCount) * usableH,
+              count: w.count,
+              label: w.label,
+            }));
+            const polyline = points.map((p) => `${p.x},${p.y}`).join(" ");
+            const areaPath = `M${points[0].x},${padY + usableH} ${points.map((p) => `L${p.x},${p.y}`).join(" ")} L${points[points.length - 1].x},${padY + usableH} Z`;
+            return (
+              <div style={glass({ padding: "18px 20px", marginBottom: 16 })}>
+                <div style={{ fontSize: 12, color: t.textSecondary, fontWeight: 500, marginBottom: 14 }}>
+                  Decision Trend
+                  <span style={{ color: t.textMuted, fontWeight: 400, marginLeft: 8 }}>Last 8 weeks</span>
+                </div>
+                <svg viewBox={`0 0 ${chartW} ${chartH + 10}`} style={{ width: "100%", height: 180 }} preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={t.accent} stopOpacity="0.18" />
+                      <stop offset="100%" stopColor={t.accent} stopOpacity="0.02" />
+                    </linearGradient>
+                  </defs>
+                  {/* Grid lines */}
+                  {[0, 0.25, 0.5, 0.75, 1].map((frac, i) => (
+                    <line
+                      key={i}
+                      x1={padX}
+                      y1={padY + usableH * (1 - frac)}
+                      x2={chartW - padX}
+                      y2={padY + usableH * (1 - frac)}
+                      stroke={t.chartGrid}
+                      strokeWidth="0.3"
+                    />
+                  ))}
+                  {/* Area fill */}
+                  <path d={areaPath} fill="url(#trendFill)" />
+                  {/* Line */}
+                  <polyline
+                    points={polyline}
+                    fill="none"
+                    stroke={t.accent}
+                    strokeWidth="0.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  {/* Dots + labels */}
+                  {points.map((p, i) => (
+                    <g key={i}>
+                      <circle cx={p.x} cy={p.y} r="1.2" fill={t.accent} />
+                      <text x={p.x} y={padY + usableH + 6} textAnchor="middle" fill={t.textMuted} fontSize="2.8" fontFamily="inherit">
+                        {p.label}
+                      </text>
+                      {p.count > 0 && (
+                        <text x={p.x} y={p.y - 2.5} textAnchor="middle" fill={t.textSecondary} fontSize="2.5" fontFamily="inherit">
+                          {p.count}
+                        </text>
+                      )}
+                    </g>
+                  ))}
+                </svg>
+              </div>
+            );
+          })()}
+
+          {/* Cost Impact Summary */}
+          {(() => {
+            const totalCostImpact = decisions.reduce((sum, d) => sum + (d.cost_impact ?? 0), 0);
+            const avgCost = decisions.length > 0 ? totalCostImpact / decisions.length : 0;
+            const highestDecision = decisions.reduce<Decision | null>((max, d) =>
+              !max || Math.abs(d.cost_impact ?? 0) > Math.abs(max.cost_impact ?? 0) ? d : max, null);
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
+                <div style={glass({ padding: "16px 18px" })}>
+                  <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 8, fontWeight: 500 }}>Total Cost Impact</div>
+                  <div style={{
+                    fontSize: 24, fontWeight: 700, letterSpacing: "-0.5px", lineHeight: 1,
+                    color: totalCostImpact > 0 ? t.neonRed : totalCostImpact < 0 ? t.neonGreen : t.textPrimary,
+                  }}>
+                    {totalCostImpact >= 0 ? "+" : ""}{formatCurrency(totalCostImpact)}
+                  </div>
+                  <div style={{ fontSize: 12, color: t.textMuted, marginTop: 8 }}>Across {decisions.length} decisions</div>
+                </div>
+                <div style={glass({ padding: "16px 18px" })}>
+                  <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 8, fontWeight: 500 }}>Avg Cost / Decision</div>
+                  <div style={{
+                    fontSize: 24, fontWeight: 700, letterSpacing: "-0.5px", lineHeight: 1,
+                    color: avgCost > 0 ? t.neonAmber : t.textPrimary,
+                  }}>
+                    {formatCurrency(Math.abs(avgCost))}
+                  </div>
+                  <div style={{ fontSize: 12, color: t.textMuted, marginTop: 8 }}>Per decision average</div>
+                </div>
+                <div
+                  style={glass({ padding: "16px 18px", cursor: highestDecision ? "pointer" : "default" })}
+                  onClick={() => {
+                    if (highestDecision && activeProjectId) {
+                      navigate(`/project/${activeProjectId}/decision/${highestDecision.id}`);
+                    }
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: t.textSecondary, marginBottom: 8, fontWeight: 500 }}>Highest Single Impact</div>
+                  <div style={{
+                    fontSize: 24, fontWeight: 700, letterSpacing: "-0.5px", lineHeight: 1,
+                    color: t.neonRed,
+                  }}>
+                    {highestDecision ? formatCurrency(Math.abs(highestDecision.cost_impact ?? 0)) : "$0"}
+                  </div>
+                  <div style={{ fontSize: 12, color: t.textMuted, marginTop: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {highestDecision ? highestDecision.title : "No decisions"}
+                    {highestDecision && <span style={{ color: t.accent, marginLeft: 6 }}>&rarr;</span>}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Risk Distribution + Activity Feed row */}
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+            {/* Risk Distribution — SVG Donut */}
+            {(() => {
+              const riskCounts: Record<string, number> = { low: 0, medium: 0, high: 0, critical: 0 };
+              decisions.forEach((d) => {
+                const r = d.risk_level || "low";
+                if (r in riskCounts) riskCounts[r]++;
+                else riskCounts.low++;
+              });
+              const total = decisions.length || 1;
+              const riskEntries = [
+                { level: "low", count: riskCounts.low, color: t.neonGreen },
+                { level: "medium", count: riskCounts.medium, color: t.neonAmber },
+                { level: "high", count: riskCounts.high, color: t.neonRed },
+                { level: "critical", count: riskCounts.critical, color: "#FF2D55" },
+              ].filter((e) => e.count > 0);
+
+              const cx = 50, cy = 50, r = 38, strokeW = 10;
+              const circumference = 2 * Math.PI * r;
+              let offset = 0;
+
+              return (
+                <div style={glass({ padding: "18px 20px" })}>
+                  <div style={{ fontSize: 12, color: t.textSecondary, fontWeight: 500, marginBottom: 14 }}>Risk Distribution</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+                    <svg viewBox="0 0 100 100" style={{ width: 120, height: 120, flexShrink: 0 }}>
+                      {/* Background ring */}
+                      <circle cx={cx} cy={cy} r={r} fill="none" stroke={t.chartGrid} strokeWidth={strokeW} />
+                      {/* Segments */}
+                      {riskEntries.map((entry) => {
+                        const pct = entry.count / total;
+                        const dashLen = pct * circumference;
+                        const dashGap = circumference - dashLen;
+                        const el = (
+                          <circle
+                            key={entry.level}
+                            cx={cx}
+                            cy={cy}
+                            r={r}
+                            fill="none"
+                            stroke={entry.color}
+                            strokeWidth={strokeW}
+                            strokeDasharray={`${dashLen} ${dashGap}`}
+                            strokeDashoffset={-offset}
+                            strokeLinecap="butt"
+                            transform={`rotate(-90 ${cx} ${cy})`}
+                            style={{ transition: "all 0.5s ease" }}
+                          />
+                        );
+                        offset += dashLen;
+                        return el;
+                      })}
+                      {/* Center text */}
+                      <text x={cx} y={cy - 4} textAnchor="middle" fill={t.textPrimary} fontSize="16" fontWeight="700" fontFamily="inherit">
+                        {total}
+                      </text>
+                      <text x={cx} y={cy + 9} textAnchor="middle" fill={t.textMuted} fontSize="6" fontFamily="inherit">
+                        decisions
+                      </text>
+                    </svg>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
+                      {[
+                        { level: "low", color: t.neonGreen },
+                        { level: "medium", color: t.neonAmber },
+                        { level: "high", color: t.neonRed },
+                        { level: "critical", color: "#FF2D55" },
+                      ].map((entry) => (
+                        <div key={entry.level} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: entry.color, flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, color: t.textSecondary, flex: 1, textTransform: "capitalize" }}>{entry.level}</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: t.textPrimary }}>{riskCounts[entry.level]}</span>
+                          <span style={{ fontSize: 11, color: t.textMuted, width: 36, textAlign: "right" }}>
+                            {((riskCounts[entry.level] / total) * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Recent Activity Feed — compact timeline */}
+            <div style={glass({ padding: "18px 20px" })}>
+              <div style={{ fontSize: 12, color: t.textSecondary, fontWeight: 500, marginBottom: 14 }}>Recent Activity</div>
+              {decisions
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .slice(0, 5)
+                .map((d, i, arr) => {
+                  const typeColor =
+                    d.decision_type === "cost_revision" ? t.neonAmber :
+                    d.decision_type === "risk_acceptance" ? t.neonRed :
+                    d.decision_type === "scope_change" ? t.teal :
+                    d.decision_type === "approval" ? t.neonGreen : t.accent;
+                  return (
+                    <div
+                      key={d.id}
+                      onClick={() => activeProjectId && navigate(`/project/${activeProjectId}/decision/${d.id}`)}
+                      style={{
+                        display: "flex",
+                        gap: 12,
+                        padding: "10px 0",
+                        borderBottom: i < arr.length - 1 ? `0.5px solid ${t.divider}` : "none",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {/* Timeline dot + line */}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 12, flexShrink: 0, paddingTop: 2 }}>
+                        <div style={{
+                          width: 8, height: 8, borderRadius: "50%",
+                          background: typeColor,
+                          boxShadow: `0 0 6px ${typeColor}40`,
+                        }} />
+                        {i < arr.length - 1 && (
+                          <div style={{ width: 1, flex: 1, background: t.divider, marginTop: 4 }} />
+                        )}
+                      </div>
+                      {/* Content */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                          <span style={{
+                            fontSize: 13, fontWeight: 500, color: t.textPrimary,
+                            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1,
+                          }}>
+                            {d.title}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{
+                            fontSize: 10, fontWeight: 500, padding: "1px 6px", borderRadius: 4,
+                            color: typeColor,
+                            background: typeColor + "18",
+                          }}>
+                            {d.decision_type.replace(/_/g, " ")}
+                          </span>
+                          {d.cost_impact !== 0 && (
+                            <span style={{
+                              fontSize: 11, fontWeight: 600,
+                              color: d.cost_impact > 0 ? t.neonRed : t.neonGreen,
+                            }}>
+                              {d.cost_impact > 0 ? "+" : ""}{formatCurrency(d.cost_impact)}
+                            </span>
+                          )}
+                          <span style={{ fontSize: 11, color: t.textMuted, marginLeft: "auto" }}>
+                            {(() => {
+                              const diff = Date.now() - new Date(d.created_at).getTime();
+                              const mins = Math.floor(diff / 60000);
+                              if (mins < 60) return `${mins}m ago`;
+                              const hrs = Math.floor(mins / 60);
+                              if (hrs < 24) return `${hrs}h ago`;
+                              const days = Math.floor(hrs / 24);
+                              return `${days}d ago`;
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              {decisions.length === 0 && (
+                <div style={{ fontSize: 13, color: t.textMuted, textAlign: "center", padding: 20 }}>
+                  No recent activity
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

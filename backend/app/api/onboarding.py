@@ -15,6 +15,7 @@ from app.models.invitation import UserInvitation
 from app.models.organization import Organization
 from app.models.user import User
 from app.services.audit_service import log_action
+from app.services.email_service import send_invitation, send_welcome
 
 logger = logging.getLogger(__name__)
 
@@ -209,6 +210,12 @@ async def register(
 
     await log_action(db, user.id, "self_registered", "user", user.id)
 
+    # Fire-and-forget welcome email (non-blocking, never fails the request)
+    try:
+        await send_welcome(user.email, user.full_name)
+    except Exception:
+        logger.warning("Failed to send welcome email to %s", user.email)
+
     return UserResponse.model_validate(user)
 
 
@@ -233,7 +240,8 @@ async def create_invitation(
 
     # Verify org exists
     org_result = await db.execute(select(Organization).where(Organization.id == org_id))
-    if org_result.scalar_one_or_none() is None:
+    org = org_result.scalar_one_or_none()
+    if org is None:
         raise HTTPException(status_code=404, detail="Organization not found")
 
     # Check if email already has a pending invitation for this org
@@ -267,6 +275,19 @@ async def create_invitation(
         invitation.id,
         metadata={"email": body.email, "role": body.role},
     )
+
+    # Send invitation email
+    try:
+        from app.config import settings
+        await send_invitation(
+            email=body.email,
+            token=token,
+            inviter_name=current_user.full_name,
+            org_name=org.name,
+            base_url=settings.FRONTEND_URL,
+        )
+    except Exception:
+        logger.warning("Failed to send invitation email to %s", body.email)
 
     return InvitationResponse.model_validate(invitation)
 

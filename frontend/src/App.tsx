@@ -23,6 +23,7 @@ const PublicTimelinePage = lazy(() => import("./pages/PublicTimelinePage"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const SensorConfigPage = lazy(() => import("./pages/SensorConfigPage"));
 const ProjectSetupPage = lazy(() => import("./pages/ProjectSetupPage"));
+const ProjectMapPage = lazy(() => import("./pages/ProjectMapPage"));
 
 // Auth pages (no login required)
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
@@ -73,6 +74,7 @@ export default function App() {
             <Route path="/project/:id/assumptions" element={<AssumptionsPage />} />
             <Route path="/project/:id/reports" element={<ReportsPage />} />
             <Route path="/project/:id/setup" element={<ProjectSetupPage />} />
+            <Route path="/map" element={<ProjectMapPage />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/audit-log" element={<AuditLogPage />} />
           </Route>

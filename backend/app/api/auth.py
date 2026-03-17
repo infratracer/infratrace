@@ -17,7 +17,9 @@ from app.database import get_db
 from app.models.user import User
 from pydantic import BaseModel, Field
 from app.schemas.auth import LoginRequest, TokenResponse, UserResponse
+from app.config import settings
 from app.services.audit_service import log_action
+from app.services.email_service import send_password_reset
 
 logger = logging.getLogger(__name__)
 
@@ -199,11 +201,18 @@ async def forgot_password(
 
     await log_action(db, user.id, "password_reset_requested", "user", user.id)
 
-    # In production: send email with reset link containing the token
-    # For demo: return token directly
+    # Send password reset email
+    try:
+        await send_password_reset(
+            email=user.email,
+            token=reset_token,
+            base_url=settings.FRONTEND_URL,
+        )
+    except Exception:
+        logger.warning("Failed to send password reset email to %s", user.email)
+
     return {
         "detail": "If that email exists, a reset link has been sent.",
-        "reset_token": reset_token,
     }
 
 
