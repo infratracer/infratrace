@@ -94,36 +94,36 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* What is InfraTrace — Video Explainer */}
+      <section className="fade-section" style={{ padding: "80px 24px 60px", maxWidth: 960, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#32D74B", marginBottom: 12 }}>2 Minutes. Full Picture.</div>
+          <h2 style={{ fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 700, margin: "0 0 12px" }}>What is InfraTrace?</h2>
+          <p style={{ fontSize: 15, lineHeight: 1.7, color: "rgba(255,255,255,0.45)", maxWidth: 580, marginLeft: "auto", marginRight: "auto" }}>
+            How blockchain, AI, and real-time data come together to make every infrastructure decision transparent, verifiable, and accountable.
+          </p>
+        </div>
+        <div className="glass" style={{ padding: isMobile ? 6 : 14, boxShadow: "0 0 100px rgba(50,215,75,0.10), 0 0 40px rgba(10,132,255,0.08)" }}>
+          <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, borderRadius: isMobile ? 8 : 14, overflow: "hidden" }}>
+            <iframe
+              src="https://www.youtube.com/embed/XJwX2TxVhls?rel=0&modestbranding=1&color=white"
+              title="What is InfraTrace — Infrastructure Decision Accountability Platform"
+              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      </section>
+
       {/* Problem */}
-      <section className="fade-section" style={{ padding: "100px 24px", maxWidth: 900, margin: "0 auto" }}>
+      <section className="fade-section" style={{ padding: "60px 24px 100px", maxWidth: 900, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 60 }}>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#FF453A", marginBottom: 12 }}>The Problem</div>
           <h2 style={{ fontSize: "clamp(28px, 4vw, 42px)", fontWeight: 700, lineHeight: 1.2, margin: 0 }}>$2.5 trillion spent annually.<br />30% lost.</h2>
           <p style={{ fontSize: 16, lineHeight: 1.8, color: "rgba(255,255,255,0.50)", marginTop: 20, maxWidth: 650, marginLeft: "auto", marginRight: "auto" }}>
             Infrastructure projects worldwide lose roughly 30% of their budgets to corruption, mismanagement, and poor decision-making. The records live in spreadsheets and emails — editable, deletable, and lost by the time anyone asks questions.
           </p>
-        </div>
-      </section>
-
-      {/* Demo Video */}
-      <section className="fade-section" style={{ padding: "40px 24px 100px", maxWidth: 900, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#32D74B", marginBottom: 12 }}>See It In Action</div>
-          <h2 style={{ fontSize: "clamp(24px, 3.5vw, 36px)", fontWeight: 700, margin: 0 }}>How InfraTrace Works</h2>
-          <p style={{ fontSize: 15, lineHeight: 1.7, color: "rgba(255,255,255,0.45)", marginTop: 12, maxWidth: 550, marginLeft: "auto", marginRight: "auto" }}>
-            Watch how decisions flow from capture to tamper-proof verification — blockchain anchoring, AI analysis, and real-time sensor monitoring in one platform.
-          </p>
-        </div>
-        <div className="glass" style={{ padding: isMobile ? 8 : 16, boxShadow: "0 0 80px rgba(50,215,75,0.08)" }}>
-          <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, borderRadius: 12, overflow: "hidden" }}>
-            <iframe
-              src="https://www.youtube.com/embed/XJwX2TxVhls?rel=0&modestbranding=1&color=white"
-              title="InfraTrace Demo — Infrastructure Decision Accountability"
-              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none" }}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          </div>
         </div>
       </section>
 
