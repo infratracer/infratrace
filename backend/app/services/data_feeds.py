@@ -105,7 +105,7 @@ async def _fetch_openweathermap(config: dict, unit: str) -> tuple[float, str] | 
 # MetalpriceAPI — commodity prices (steel, copper, aluminium, zinc, etc.)
 # Free tier: 100 requests/month
 # source_config: { "provider": "metalpriceapi", "base": "USD", "symbol": "CU" }
-# Symbols: CU=copper, FE=iron/steel, AL=aluminium, ZN=zinc, NI=nickel
+# Symbols: XCU=copper, IRON=iron ore, ALU=aluminium, XAU=gold, XAG=silver
 # ---------------------------------------------------------------------------
 
 async def _fetch_metalpriceapi(config: dict, unit: str) -> tuple[float, str] | None:

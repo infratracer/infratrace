@@ -25,7 +25,9 @@ from app.services.data_feeds import fetch_reading, _generate_simulated
 
 # Track anomaly counts per project to trigger AI analysis
 _anomaly_counts: dict[str, int] = {}
+_last_ai_trigger: dict[str, float] = {}
 _AI_TRIGGER_THRESHOLD = 3  # Trigger AI after this many anomalies in a feed cycle
+_AI_COOLDOWN_SECONDS = 300  # 5 minute cooldown between auto AI triggers
 
 logger = logging.getLogger(__name__)
 
@@ -131,9 +133,13 @@ async def run_sensor_feed(project_id: str, interval: int = 5) -> None:
 
                 await db.commit()
 
-                # Auto-trigger AI analysis when anomaly count exceeds threshold
-                if _anomaly_counts.get(project_id, 0) >= _AI_TRIGGER_THRESHOLD:
+                # Auto-trigger AI analysis when anomaly count exceeds threshold (with cooldown)
+                import time as _time
+                now = _time.time()
+                if (_anomaly_counts.get(project_id, 0) >= _AI_TRIGGER_THRESHOLD
+                        and now - _last_ai_trigger.get(project_id, 0) > _AI_COOLDOWN_SECONDS):
                     _anomaly_counts[project_id] = 0
+                    _last_ai_trigger[project_id] = now
                     try:
                         from app.services.ai_analyser import analyse_project
                         async with async_session() as ai_db:
