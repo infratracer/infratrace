@@ -1195,31 +1195,40 @@ The frontend will be available at `http://localhost:5173`.
 
 ### Frontend Pages
 
-The frontend consists of 12 pages with dark/light mode iOS 26 Liquid Glass UI:
+The frontend consists of 19 pages with dark/light mode iOS 26 Liquid Glass UI:
 
 | Page | Route | Description |
 |------|-------|-------------|
-| Login | `/login` | Email/password authentication |
-| Dashboard | `/dashboard` | Project overview, metrics, activity feed, cost charts, sensor grid |
-| Log Decision | `/projects/{id}/decisions/new` | Append-only decision form with type, cost, risk, justification |
-| Timeline | `/projects/{id}/timeline` | Chronological decision chain with cost trajectory chart |
-| Decision Detail | `/projects/{id}/decisions/{id}` | Full decision record with hash chain position |
-| Verify Chain | `/projects/{id}/verify` | Hash chain and blockchain verification interface |
-| AI Analysis | `/projects/{id}/analysis` | AI findings with severity, confidence, affected decisions |
-| Sensor Dashboard | `/projects/{id}/sensors` | Real-time WebSocket sensor grid with anomaly indicators |
-| Assumptions | `/projects/{id}/assumptions` | Assumptions register with sensor thresholds |
-| Reports | `/projects/{id}/reports` | PDF report generation and export |
+| Login | `/login` | Email/password auth with "Try Demo" button |
+| Register | `/register` | Self-service account creation |
+| Forgot Password | `/forgot-password` | Password reset request |
+| Reset Password | `/reset-password` | Set new password via token |
+| Accept Invite | `/invite/:token` | Accept email invitation + set password |
+| Dashboard | `/` | Project overview, metrics, cost charts, sensor grid, welcome banner |
+| Timeline | `/project/:id/timeline` | Chronological decision chain with cost trajectory |
+| Decision Detail | `/project/:id/decision/:did` | Full record with hash chain position + blockchain proof |
+| Log Decision | `/project/:id/log` | Append-only form with configurable types from project settings |
+| Sensor Dashboard | `/project/:id/sensors` | Real-time WebSocket feed with per-project sensor configs |
+| Sensor Config | `/project/:id/sensors/config` | CRUD for sensor definitions, thresholds, API providers |
+| AI Analysis | `/project/:id/analysis` | AI findings with severity, confidence, affected decisions |
+| Verify Chain | `/project/:id/verify` | SHA-256 chain verification + Polygon blockchain proof status |
+| Assumptions | `/project/:id/assumptions` | Assumptions register with live sensor threshold bars |
+| Reports | `/project/:id/reports` | PDF report generation with blockchain proofs |
+| Project Setup | `/project/:id/setup` | 4-step wizard: sensors → team → assumptions → launch |
 | Audit Log | `/admin/audit-log` | Platform-wide action log (admin/auditor) |
-| User Management | `/admin/users` | Create, edit, deactivate users (admin only) |
+| User Management | `/admin/users` | Create, edit roles, deactivate users (admin only) |
+| Public Timeline | `/public/:id` | Unauthenticated transparency view with verification |
 
 ### 7. Default Credentials (After Seeding)
 
 | Email | Password | Role |
 |-------|----------|------|
-| `admin@infratrace.io` | Value of `SEED_ADMIN_PASSWORD` | Admin |
-| `pm@infratrace.io` | Value of `SEED_DEMO_PASSWORD` | Project Manager |
-| `auditor@infratrace.io` | Value of `SEED_DEMO_PASSWORD` | Auditor |
-| `stakeholder@infratrace.io` | Value of `SEED_DEMO_PASSWORD` | Stakeholder |
+| `admin@infratrace.io` | `admin123` | Admin |
+| `sarah.chen@infratrace.io` | `demo123` | Project Manager |
+| `auditor@infratrace.io` | `demo123` | Auditor |
+| `stakeholder@infratrace.io` | `demo123` | Stakeholder |
+
+> **Tip:** Click "Try Demo" on the login page to auto-fill admin credentials.
 
 ---
 
@@ -1365,7 +1374,7 @@ docker run -p 8000:8000 \
 | Race condition (duplicate decisions) | PostgreSQL advisory locks per project |
 | Replay attacks | Unique record hashes; sequence numbers enforced at DB and contract level |
 | Admin impersonation | Role embedded in JWT claims; verified per-request against DB |
-| Data exfiltration | CORS restricted to configured frontend URL; no wildcard origins in production |
+| Data exfiltration | JWT-based auth on all endpoints; rate limiting (100 req/min per IP) |
 | Audit log tampering | Audit log is append-only in practice; only the system writes to it |
 
 </details>
@@ -1388,23 +1397,30 @@ gantt
     IoT simulator + WebSocket   :done, p1e, 2025-12, 2026-01
     AI analysis (OpenRouter)    :done, p1f, 2026-01, 2026-02
     PDF report export           :done, p1g, 2026-02, 2026-02
-    Frontend (12 pages)         :done, p1h, 2025-11, 2026-03
+    Frontend (19 pages)         :done, p1h, 2025-11, 2026-03
     Railway + Vercel deploy     :done, p1i, 2026-02, 2026-03
 
-    section Phase 2 - Public Portal
-    Public verification portal  :p2a, 2026-04, 2026-05
-    Compliance report templates :p2b, 2026-05, 2026-06
-    Email notifications         :p2c, 2026-05, 2026-06
-    Batch blockchain anchoring  :p2d, 2026-06, 2026-07
-    Audit trail export (CSV)    :p2e, 2026-06, 2026-07
+    section Phase 2 - Platform (Complete)
+    Public verification portal  :done, p2a, 2026-03, 2026-03
+    Multi-tenant organizations  :done, p2b, 2026-03, 2026-03
+    User onboarding + invites   :done, p2c, 2026-03, 2026-03
+    Configurable sensors + feeds:done, p2d, 2026-03, 2026-03
+    Document uploads            :done, p2e, 2026-03, 2026-03
+    Full-text search            :done, p2f, 2026-03, 2026-03
+    Password reset flow         :done, p2g, 2026-03, 2026-03
 
-    section Phase 3 - Mobile & i18n
-    Progressive Web App         :p3a, 2026-07, 2026-09
-    Multi-language support      :p3b, 2026-08, 2026-10
-    Offline-first decisions     :p3c, 2026-09, 2026-11
-    Push notifications          :p3d, 2026-09, 2026-10
+    section Phase 3 - Scale
+    Email notifications         :p3a, 2026-04, 2026-05
+    Compliance report templates :p3b, 2026-04, 2026-06
+    Audit trail export (CSV)    :p3c, 2026-05, 2026-06
 
-    section Phase 4 - Marketplace
+    section Phase 4 - Mobile & i18n
+    Progressive Web App         :p4a, 2026-07, 2026-09
+    Multi-language support      :p4b, 2026-08, 2026-10
+    Offline-first decisions     :p4c, 2026-09, 2026-11
+    Push notifications          :p4d, 2026-09, 2026-10
+
+    section Phase 5 - Marketplace
     Template marketplace        :p4a, 2026-11, 2027-01
     Third-party IoT connectors  :p4b, 2026-11, 2027-02
     Multi-chain support         :p4c, 2027-01, 2027-03
@@ -1420,14 +1436,26 @@ All core features are built and deployed:
 - OpenRouter AI analysis with 4-model rotation and rule-based fallback
 - Real-time IoT sensor dashboard with WebSocket feed and anomaly detection
 - PDF audit report export with blockchain proofs
-- 12-page React frontend with dark/light iOS 26 Liquid Glass UI
-- 41+ REST API endpoints across 10 router groups
+- 19-page React frontend with dark/light iOS 26 Liquid Glass UI
+- 55+ REST API endpoints across 15 router groups
 
-### Phase 2 -- Public Portal & Compliance
+### Phase 2 -- Platform (Complete)
 
-Standalone public verification portal, compliance report templates for government procurement standards, batch anchoring to reduce per-decision gas costs, and email notification system for decision events.
+Built and deployed in March 2026:
+- Multi-tenant organization model with data isolation
+- User onboarding: bootstrap, self-registration, email invitations, password reset
+- Configurable per-project sensors with real API feeds (OpenWeatherMap, MetalpriceAPI)
+- Document uploads with SHA-256 checksums
+- Full-text search across decisions (PostgreSQL native)
+- Public transparency portal (unauthenticated verification)
+- Project setup wizard (4-step guided flow)
+- Configurable decision types and risk levels per project
 
-### Phase 3 -- Mobile & Internationalization
+### Phase 3 -- Scale
+
+Email notifications, compliance report templates for government procurement standards (CoST IDS, OC4IDS), CSV/JSON export alongside PDF.
+
+### Phase 4 -- Mobile & Internationalization
 
 Progressive Web App with offline-first decision drafting, multi-language support for international deployment, and push notifications for anomaly alerts.
 
