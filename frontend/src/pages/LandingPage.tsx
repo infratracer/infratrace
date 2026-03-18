@@ -199,6 +199,86 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Product Showcase */}
+      <section className="fade-section" style={{ padding: "80px 24px 100px", maxWidth: 1100, margin: "0 auto" }}>
+        <style>{`
+          .showcase-tab { padding: 10px 20px; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; background: transparent; color: rgba(255,255,255,0.45); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; transition: all 0.3s; white-space: nowrap; }
+          .showcase-tab:hover { border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+          .showcase-tab.active { background: rgba(10,132,255,0.12); border-color: rgba(10,132,255,0.3); color: #0A84FF; }
+          .showcase-frame { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 20px 80px rgba(0,0,0,0.5), 0 0 60px rgba(10,132,255,0.06); transition: all 0.5s ease; }
+          .showcase-frame img { width: 100%; display: block; transition: opacity 0.4s ease; }
+          .showcase-dots { display: flex; gap: 6px; }
+          .showcase-dots span { width: 10px; height: 10px; border-radius: 50%; }
+        `}</style>
+        <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.2em", textTransform: "uppercase", color: "#64D2FF", marginBottom: 12 }}>The Platform</div>
+          <h2 style={{ fontSize: "clamp(24px, 3.5vw, 36px)", fontWeight: 700, margin: 0 }}>See What You're Getting</h2>
+          <p style={{ fontSize: 15, lineHeight: 1.7, color: "rgba(255,255,255,0.40)", marginTop: 12, maxWidth: 500, marginLeft: "auto", marginRight: "auto" }}>
+            Real screenshots. Real data. Nothing mocked up.
+          </p>
+        </div>
+
+        {(() => {
+          const screens = [
+            { id: "dashboard", label: "Dashboard", src: "/screenshots/dashboard.png", caption: "Portfolio overview with cost trajectory, project health metrics, and recent decision activity feed." },
+            { id: "blockchain", label: "Blockchain Proof", src: "/screenshots/blockchain-proof.png", caption: "Every decision shows its SHA-256 hash, chain position, and Polygon transaction — independently verifiable by anyone." },
+            { id: "verify", label: "Chain Verification", src: "/screenshots/chain-verification.png", caption: "One-click verification of all 24 decisions against the Polygon blockchain. Green means tamper-free." },
+            { id: "sensors", label: "Live Sensors", src: "/screenshots/sensors.png", caption: "Real-time commodity prices, weather, and delivery data — keeping project assumptions honest." },
+          ];
+          // Use a simple approach: render all, show active via opacity
+          return <>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 28, flexWrap: "wrap" }}>
+              {screens.map((s, i) => (
+                <button key={s.id} className={`showcase-tab ${i === 0 ? "active" : ""}`} onClick={(e) => {
+                  // Toggle active tab
+                  e.currentTarget.parentElement?.querySelectorAll(".showcase-tab").forEach((el, j) => {
+                    el.classList.toggle("active", j === i);
+                  });
+                  // Toggle images
+                  e.currentTarget.closest("section")?.querySelectorAll(".showcase-img").forEach((el, j) => {
+                    (el as HTMLElement).style.opacity = j === i ? "1" : "0";
+                    (el as HTMLElement).style.position = j === i ? "relative" : "absolute";
+                  });
+                  // Toggle captions
+                  e.currentTarget.closest("section")?.querySelectorAll(".showcase-caption").forEach((el, j) => {
+                    (el as HTMLElement).style.opacity = j === i ? "1" : "0";
+                  });
+                }}>{s.label}</button>
+              ))}
+            </div>
+
+            {/* Browser frame */}
+            <div className="showcase-frame">
+              {/* Fake browser chrome */}
+              <div style={{ padding: "10px 16px", background: "rgba(255,255,255,0.03)", borderBottom: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", gap: 12 }}>
+                <div className="showcase-dots">
+                  <span style={{ background: "#FF5F57" }} />
+                  <span style={{ background: "#FEBC2E" }} />
+                  <span style={{ background: "#28C840" }} />
+                </div>
+                <div style={{ flex: 1, background: "rgba(255,255,255,0.04)", borderRadius: 6, padding: "5px 12px", fontSize: 11, color: "rgba(255,255,255,0.25)", fontFamily: "monospace" }}>
+                  infratrace.xyz
+                </div>
+              </div>
+              {/* Screenshots stacked */}
+              <div style={{ position: "relative", background: "#0d0d14" }}>
+                {screens.map((s, i) => (
+                  <img key={s.id} className="showcase-img" src={s.src} alt={s.label} loading={i === 0 ? "eager" : "lazy"}
+                    style={{ opacity: i === 0 ? 1 : 0, position: i === 0 ? "relative" : "absolute", top: 0, left: 0, width: "100%" }} />
+                ))}
+              </div>
+            </div>
+
+            {/* Caption */}
+            <div style={{ textAlign: "center", marginTop: 20, height: 40 }}>
+              {screens.map((s, i) => (
+                <p key={s.id} className="showcase-caption" style={{ fontSize: 13, lineHeight: 1.6, color: "rgba(255,255,255,0.40)", margin: 0, transition: "opacity 0.4s", opacity: i === 0 ? 1 : 0, position: i === 0 ? "relative" : "absolute", left: 0, right: 0 }}>{s.caption}</p>
+              ))}
+            </div>
+          </>;
+        })()}
+      </section>
+
       {/* Who it's for */}
       <section className="fade-section" style={{ padding: "80px 24px", maxWidth: 1100, margin: "0 auto" }}>
         <div style={{ textAlign: "center", marginBottom: 48 }}>
@@ -226,12 +306,12 @@ export default function LandingPage() {
       <section className="fade-section" style={{ padding: "80px 24px", maxWidth: 900, margin: "0 auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, textAlign: "center" }}>
           {[
-            { value: "55+", label: "API Endpoints" },
-            { value: "19", label: "Frontend Pages" },
-            { value: "21+", label: "Decisions Logged" },
-            { value: "SHA-256", label: "Hash Chain" },
-            { value: "Polygon", label: "Blockchain Anchoring" },
-            { value: "4 LLMs", label: "AI Models" },
+            { value: "SHA-256", label: "Tamper-Evident Hashing" },
+            { value: "Polygon", label: "On-Chain Verification" },
+            { value: "4 LLMs", label: "AI Risk Analysis" },
+            { value: "Live", label: "Real-Time Sensor Feeds" },
+            { value: "RBAC", label: "Multi-Stakeholder Access" },
+            { value: "CSV/PDF", label: "Audit Export" },
           ].map((s) => (
             <div key={s.label} className="glass" style={{ padding: "24px 16px" }}>
               <div style={{ fontSize: 28, fontWeight: 700, color: "#0A84FF", marginBottom: 4 }}>{s.value}</div>
