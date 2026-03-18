@@ -90,7 +90,7 @@ async def list_projects(
 async def create_project(
     body: ProjectCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(require_roles("admin", "project_manager", "stakeholder")),
 ) -> ProjectResponse:
     project = Project(
         name=body.name,

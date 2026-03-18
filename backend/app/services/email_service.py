@@ -97,7 +97,7 @@ async def send_email(to: str, subject: str, html: str) -> bool:
     """
     api_key = settings.RESEND_API_KEY
     if not api_key:
-        logger.warning("RESEND_API_KEY not configured — skipping email to {}", to)
+        logger.warning("RESEND_API_KEY not configured — skipping email to %s", to)
         return False
 
     email_from = settings.EMAIL_FROM
