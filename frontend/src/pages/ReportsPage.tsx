@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { exportReport } from "../api/reports";
+import client from "../api/client";
 import { useTheme } from "../hooks/useTheme";
 import { useToastStore } from "../store/toastStore";
 
@@ -9,6 +10,8 @@ export default function ReportsPage() {
   const t = useTheme();
   const addToast = useToastStore((s) => s.addToast);
   const [downloading, setDownloading] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
+  const [exportingJson, setExportingJson] = useState(false);
   const [options, setOptions] = useState({
     include_ai: true,
     include_sensors: true,
@@ -32,6 +35,28 @@ export default function ReportsPage() {
       addToast("Failed to generate report. Please try again.", "error");
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleExportFormat = async (format: "csv" | "json") => {
+    if (!id) return;
+    const setLoading = format === "csv" ? setExportingCsv : setExportingJson;
+    setLoading(true);
+    try {
+      const res = await client.get(`/projects/${id}/export/decisions?format=${format}`, { responseType: "blob" });
+      const blob = new Blob([res.data]);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `infratrace-decisions-${id}.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addToast(`${format.toUpperCase()} exported successfully.`, "success");
+    } catch (err) {
+      console.error(`Failed to export ${format}:`, err);
+      addToast(`Failed to export ${format.toUpperCase()}. Please try again.`, "error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,17 +120,51 @@ export default function ReportsPage() {
           ))}
         </div>
 
-        <button style={buttonStyle} onClick={handleExport} disabled={downloading}>
-          {downloading ? (
-            <div style={{
-              width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)",
-              borderTop: "2px solid #FFF", borderRadius: "50%", animation: "spin 1s linear infinite",
-            }} />
-          ) : (
-            <span>{"\u2B07"}</span>
-          )}
-          {downloading ? "Generating..." : "Download PDF Report"}
-        </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <button style={buttonStyle} onClick={handleExport} disabled={downloading}>
+            {downloading ? (
+              <div style={{
+                width: 16, height: 16, border: "2px solid rgba(255,255,255,0.3)",
+                borderTop: "2px solid #FFF", borderRadius: "50%", animation: "spin 1s linear infinite",
+              }} />
+            ) : (
+              <span>{"\u2B07"}</span>
+            )}
+            {downloading ? "Generating..." : "Download PDF Report"}
+          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              style={{
+                ...buttonStyle,
+                flex: 1,
+                background: exportingCsv ? t.accentDim : "transparent",
+                border: `1px solid ${t.glassBorder}`,
+                color: t.textPrimary,
+                cursor: exportingCsv ? "not-allowed" : "pointer",
+                opacity: exportingCsv ? 0.7 : 1,
+              }}
+              onClick={() => handleExportFormat("csv")}
+              disabled={exportingCsv}
+            >
+              {exportingCsv ? "Exporting..." : "Export CSV"}
+            </button>
+            <button
+              style={{
+                ...buttonStyle,
+                flex: 1,
+                background: exportingJson ? t.accentDim : "transparent",
+                border: `1px solid ${t.glassBorder}`,
+                color: t.textPrimary,
+                cursor: exportingJson ? "not-allowed" : "pointer",
+                opacity: exportingJson ? 0.7 : 1,
+              }}
+              onClick={() => handleExportFormat("json")}
+              disabled={exportingJson}
+            >
+              {exportingJson ? "Exporting..." : "Export JSON"}
+            </button>
+          </div>
+        </div>
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

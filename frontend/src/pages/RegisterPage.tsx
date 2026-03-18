@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useThemeStore } from "../store/themeStore";
 import { useTheme } from "../hooks/useTheme";
+import { useAuthStore } from "../store/authStore";
 import client from "../api/client";
 
 export default function RegisterPage() {
@@ -10,7 +11,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [success] = useState(false);
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -38,7 +39,11 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await client.post("/auth/register", { email, password, full_name: fullName });
-      setSuccess(true);
+      // Auto-login after registration
+      const loginRes = await client.post("/auth/login", { email, password });
+      const meRes = await client.get("/auth/me", { headers: { Authorization: `Bearer ${loginRes.data.access_token}` } });
+      useAuthStore.getState().setAuth(loginRes.data.access_token, meRes.data);
+      navigate("/dashboard");
     } catch (err: any) {
       setError(err.response?.data?.detail || "Registration failed");
     } finally {

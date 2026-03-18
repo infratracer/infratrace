@@ -14,6 +14,8 @@ export default function TimelinePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("");
+  const [search, setSearch] = useState("");
+  const [sortNewest, setSortNewest] = useState(true);
   const t = useTheme();
   const abortRef = useRef<AbortController | null>(null);
 
@@ -94,8 +96,68 @@ export default function TimelinePage() {
     );
   }
 
+  const filteredDecisions = (() => {
+    let list = decisions;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (d) =>
+          d.title.toLowerCase().includes(q) ||
+          d.description.toLowerCase().includes(q)
+      );
+    }
+    if (!sortNewest) {
+      list = [...list].reverse();
+    }
+    return list;
+  })();
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* Search + Sort */}
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input
+          type="text"
+          placeholder="Search decisions..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            flex: 1,
+            padding: "10px 14px",
+            background: t.bgCard,
+            backdropFilter: "blur(40px) saturate(180%)",
+            WebkitBackdropFilter: "blur(40px) saturate(180%)",
+            border: `1px solid ${t.glassBorder}`,
+            borderRadius: 10,
+            color: t.textPrimary,
+            fontSize: 13,
+            outline: "none",
+            fontFamily: "inherit",
+            boxShadow: t.glassShadow,
+          }}
+        />
+        <button
+          onClick={() => setSortNewest((v) => !v)}
+          style={{
+            padding: "10px 14px",
+            background: t.bgCard,
+            backdropFilter: "blur(40px) saturate(180%)",
+            WebkitBackdropFilter: "blur(40px) saturate(180%)",
+            border: `1px solid ${t.glassBorder}`,
+            borderRadius: 10,
+            color: t.textSecondary,
+            fontSize: 11,
+            fontWeight: 500,
+            cursor: "pointer",
+            fontFamily: "inherit",
+            whiteSpace: "nowrap",
+            boxShadow: t.glassShadow,
+          }}
+        >
+          {sortNewest ? "Newest First" : "Oldest First"}
+        </button>
+      </div>
+
       {/* Filter bar */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         <button
@@ -124,7 +186,7 @@ export default function TimelinePage() {
       </div>
 
       {/* Decision list */}
-      {decisions.length === 0 ? (
+      {filteredDecisions.length === 0 ? (
         <div style={{
           ...glassCard,
           display: "flex", flexDirection: "column", alignItems: "center",
@@ -132,11 +194,13 @@ export default function TimelinePage() {
         }}>
           <span style={{ fontSize: 32 }}>{"\u{1F4ED}"}</span>
           <span style={{ fontSize: 14, fontWeight: 600, color: t.textPrimary }}>No decisions found</span>
-          <span style={{ fontSize: 12, color: t.textSecondary }}>No decisions match the current filter.</span>
+          <span style={{ fontSize: 12, color: t.textSecondary }}>
+            {search.trim() ? "No decisions match your search." : "No decisions match the current filter."}
+          </span>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {decisions.map((d, i) => (
+          {filteredDecisions.map((d, i) => (
             <div
               key={d.id}
               role="button"
@@ -164,7 +228,7 @@ export default function TimelinePage() {
                   }}>
                     {d.sequence_number}
                   </div>
-                  {i < decisions.length - 1 && (
+                  {i < filteredDecisions.length - 1 && (
                     <div style={{ width: 1, height: 24, marginTop: 4, backgroundColor: t.glassBorder }} />
                   )}
                 </div>

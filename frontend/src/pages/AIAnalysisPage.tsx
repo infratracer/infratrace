@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { getAnalyses, runAnalysis } from "../api/analysis";
+import { getDecisions } from "../api/decisions";
 import { useTheme } from "../hooks/useTheme";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useToastStore } from "../store/toastStore";
@@ -23,6 +24,7 @@ export default function AIAnalysisPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [decisionCount, setDecisionCount] = useState<number>(0);
   const [selected, setSelected] = useState<AIAnalysisResult | null>(null);
   const t = useTheme();
   const isMobile = useIsMobile();
@@ -37,9 +39,13 @@ export default function AIAnalysisPage() {
     abortRef.current = controller;
     setError(null);
     try {
-      const data = await getAnalyses(id);
+      const [data, decisions] = await Promise.all([
+        getAnalyses(id),
+        getDecisions(id).catch(() => []),
+      ]);
       if (controller.signal.aborted) return;
       setFindings(data);
+      setDecisionCount(decisions.length);
     } catch (err: any) {
       if (err?.name === "AbortError" || err?.code === "ERR_CANCELED") return;
       setError("Failed to load analysis results.");
@@ -154,10 +160,19 @@ export default function AIAnalysisPage() {
       {findings.length === 0 && (
         <div style={glass({ textAlign: "center", padding: "48px 28px" })}>
           <p style={{ fontSize: 28, marginBottom: 8, opacity: 0.4 }}>{"\u25C7"}</p>
-          <p style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, marginBottom: 4 }}>No Analysis Results</p>
-          <p style={{ fontSize: 13, color: t.textSecondary, maxWidth: 340, margin: "0 auto" }}>
-            Click "Run Analysis" to scan this project for risk patterns, cost anomalies, and governance issues.
+          <p style={{ fontSize: 15, fontWeight: 600, color: t.textPrimary, marginBottom: 4 }}>
+            {decisionCount < 5 ? "Not Enough Data" : "No Anomalies Detected"}
           </p>
+          <p style={{ fontSize: 13, color: t.textSecondary, maxWidth: 380, margin: "0 auto" }}>
+            {decisionCount < 5
+              ? "Not enough data for meaningful analysis. Log at least 5 decisions to get AI-powered risk insights."
+              : "No anomalies detected. Your project's decision patterns look healthy."}
+          </p>
+          {decisionCount >= 5 && (
+            <p style={{ fontSize: 12, color: t.textMuted, maxWidth: 340, margin: "12px auto 0" }}>
+              Click "Run Analysis" to scan this project for risk patterns, cost anomalies, and governance issues.
+            </p>
+          )}
         </div>
       )}
 

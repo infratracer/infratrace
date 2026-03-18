@@ -44,6 +44,7 @@ export default function LogDecisionPage() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(decisionSchema),
@@ -140,8 +141,8 @@ export default function LogDecisionPage() {
 
   if (phase === "done") {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 256 }}>
-        <div style={{ ...glassCard, textAlign: "center", maxWidth: 384, width: "100%", boxShadow: `0 0 20px ${t.neonGreenDim}` }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 320 }}>
+        <div style={{ ...glassCard, textAlign: "center", maxWidth: 420, width: "100%", boxShadow: `0 0 20px ${t.neonGreenDim}` }}>
           <div
             style={{
               width: 48,
@@ -159,15 +160,66 @@ export default function LogDecisionPage() {
           <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 4, color: t.textPrimary }}>
             Decision Recorded
           </h2>
-          <p style={{ fontSize: 12, marginBottom: 16, color: t.textSecondary }}>
+          <p style={{ fontSize: 12, marginBottom: 8, color: t.textSecondary }}>
             Hash chain updated and blockchain anchoring initiated.
           </p>
-          <button
-            style={buttonStyle}
-            onClick={() => navigate(`/project/${id}/decision/${newDecisionId}`)}
-          >
-            View Decision
-          </button>
+          <p style={{ fontSize: 11, color: t.textMuted, marginBottom: 20, fontStyle: "italic" }}>
+            Blockchain anchoring in progress — your decision will be verified on Polygon within 60 seconds.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <button
+              style={{ ...buttonStyle, width: "100%" }}
+              onClick={() => navigate(`/project/${id}/decision/${newDecisionId}`)}
+            >
+              View Decision
+            </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                style={{
+                  ...buttonStyle,
+                  flex: 1,
+                  background: "transparent",
+                  border: `1px solid ${t.glassBorder}`,
+                  color: t.textPrimary,
+                  boxShadow: "none",
+                }}
+                onClick={() => navigate(`/project/${id}/timeline`)}
+              >
+                View Timeline
+              </button>
+              <button
+                style={{
+                  ...buttonStyle,
+                  flex: 1,
+                  background: "transparent",
+                  border: `1px solid ${t.glassBorder}`,
+                  color: t.textPrimary,
+                  boxShadow: "none",
+                }}
+                onClick={() => navigate(`/project/${id}/verify`)}
+              >
+                Verify Chain
+              </button>
+            </div>
+            <button
+              style={{
+                ...buttonStyle,
+                width: "100%",
+                background: "transparent",
+                border: `1px solid ${t.glassBorder}`,
+                color: t.accent,
+                boxShadow: "none",
+              }}
+              onClick={() => {
+                setPhase("idle");
+                setNewDecisionId(null);
+                setError("");
+                reset();
+              }}
+            >
+              Log Another
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -274,7 +326,7 @@ export default function LogDecisionPage() {
 
             {/* Approved by current user — shown as info, not editable */}
             <div style={{ padding: "10px 14px", background: t.bgInput, borderRadius: 10, border: `1px solid ${t.glassBorder}` }}>
-              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: t.textMuted }}>Approved By</span>
+              <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: t.textMuted }}>Recorded By</span>
               <div style={{ fontSize: 13, color: t.textPrimary, marginTop: 4 }}>{user?.full_name} ({user?.role})</div>
             </div>
           </div>

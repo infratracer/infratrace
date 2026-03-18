@@ -40,6 +40,32 @@ export default function DecisionDetailPage() {
     return () => abortRef.current?.abort();
   }, [id, did]);
 
+  // Poll for blockchain anchor if tx_hash is missing
+  useEffect(() => {
+    if (!id || !did || !decision) return;
+    if (decision.blockchain_tx) return; // already anchored
+
+    const startTime = Date.now();
+    const maxDuration = 2 * 60 * 1000; // 2 minutes
+    const interval = setInterval(async () => {
+      if (Date.now() - startTime > maxDuration) {
+        clearInterval(interval);
+        return;
+      }
+      try {
+        const updated = await getDecision(id, did);
+        if (updated.blockchain_tx) {
+          setDecision(updated);
+          clearInterval(interval);
+        }
+      } catch {
+        // silent — keep polling
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [id, did, decision?.blockchain_tx]);
+
   const glassCard: React.CSSProperties = {
     background: t.bgCard,
     backdropFilter: "blur(40px) saturate(180%)",
@@ -184,16 +210,28 @@ export default function DecisionDetailPage() {
           </div>
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={badge(
-              d.blockchain_status === "pending" ? t.neonAmberDim : t.neonRedDim,
-              d.blockchain_status === "pending" ? t.neonAmber : t.textMuted
-            )}>{d.blockchain_status === "none" ? "Not Anchored" : d.blockchain_status}</span>
-            <span style={{ fontSize: 11, color: t.textMuted }}>
-              {d.blockchain_status === "pending" ? "Waiting for confirmation..." : "Not yet anchored on Polygon"}
-            </span>
+            {d.blockchain_status === "pending" || d.blockchain_status === "none" ? (
+              <>
+                <div style={{
+                  width: 14, height: 14, border: `2px solid ${t.neonAmberDim}`,
+                  borderTopColor: t.neonAmber, borderRadius: "50%", animation: "spin 1s linear infinite",
+                  flexShrink: 0,
+                }} />
+                <span style={{ fontSize: 11, color: t.neonAmber, fontWeight: 500 }}>
+                  Blockchain anchoring in progress...
+                </span>
+              </>
+            ) : (
+              <>
+                <span style={badge(t.neonRedDim, t.textMuted)}>{d.blockchain_status}</span>
+                <span style={{ fontSize: 11, color: t.textMuted }}>Anchoring failed</span>
+              </>
+            )}
           </div>
         )}
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* Sensor Trigger */}
       {d.sensor_trigger_id && (
