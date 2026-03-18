@@ -56,9 +56,9 @@ async def create_assumption(
     project_id: uuid.UUID,
     body: AssumptionCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ) -> AssumptionResponse:
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     assumption = Assumption(
         project_id=project_id,
@@ -95,9 +95,9 @@ async def update_assumption(
     assumption_id: uuid.UUID,
     body: AssumptionUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ) -> AssumptionResponse:
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     result = await db.execute(
         select(Assumption).where(
@@ -136,9 +136,9 @@ async def delete_assumption(
     project_id: uuid.UUID,
     assumption_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ) -> None:
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     result = await db.execute(
         select(Assumption).where(

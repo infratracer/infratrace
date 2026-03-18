@@ -49,10 +49,10 @@ async def request_approval(
     decision_id: uuid.UUID,
     body: ApprovalCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ) -> ApprovalResponse:
     """Request approval from a user for a decision. Admin/PM only."""
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     # Verify decision exists and belongs to this project
     result = await db.execute(

@@ -85,10 +85,10 @@ async def create_decision(
     body: DecisionCreate,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ) -> DecisionResponse:
     """Create a new decision record. Append-only — no edits or deletions permitted."""
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()

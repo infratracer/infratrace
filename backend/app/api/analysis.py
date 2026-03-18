@@ -37,9 +37,9 @@ async def trigger_analysis(
     project_id: uuid.UUID,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ) -> dict[str, str]:
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     await log_action(db, current_user.id, "analysis_triggered", "project", project_id)
 

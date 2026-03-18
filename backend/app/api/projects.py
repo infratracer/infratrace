@@ -118,7 +118,7 @@ async def create_project(
     member = ProjectMember(
         project_id=project.id,
         user_id=current_user.id,
-        project_role="pm",
+        project_role="owner",
     )
     db.add(member)
 
@@ -194,7 +194,7 @@ async def update_project(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> ProjectResponse:
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
@@ -301,7 +301,7 @@ async def add_member(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> MemberResponse:
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     result = await db.execute(select(Project).where(Project.id == project_id))
     if result.scalar_one_or_none() is None:
@@ -355,7 +355,7 @@ async def remove_member(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     result = await db.execute(
         select(ProjectMember).where(

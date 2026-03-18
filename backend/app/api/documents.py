@@ -33,7 +33,7 @@ async def upload_document(
     file: UploadFile,
     decision_id: uuid.UUID | None = None,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ) -> DocumentResponse:
     await require_project_access(project_id, current_user, db)
 
@@ -136,7 +136,7 @@ async def delete_document(
     project_id: uuid.UUID,
     doc_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ) -> None:
     await require_project_access(project_id, current_user, db)
 

@@ -78,9 +78,9 @@ async def update_setting(
     setting_key: str,
     body: SettingUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ) -> SettingResponse:
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     if setting_key not in ("decision_types", "risk_levels"):
         raise HTTPException(status_code=400, detail=f"Unknown setting key: {setting_key}")

@@ -30,10 +30,10 @@ async def create_webhook(
     project_id: uuid.UUID,
     body: WebhookCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ):
     """Create a webhook subscription (admin / PM only)."""
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     subscription = WebhookSubscription(
         project_id=project_id,
@@ -86,10 +86,10 @@ async def delete_webhook(
     project_id: uuid.UUID,
     webhook_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ):
     """Delete a webhook subscription."""
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     result = await db.execute(
         select(WebhookSubscription).where(
@@ -123,10 +123,10 @@ async def test_webhook(
     project_id: uuid.UUID,
     webhook_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ):
     """Send a test event to a webhook subscription."""
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     result = await db.execute(
         select(WebhookSubscription).where(

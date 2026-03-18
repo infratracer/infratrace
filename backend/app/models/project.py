@@ -76,6 +76,7 @@ class ProjectMember(Base):
     )
     project_role: Mapped[str] = mapped_column(
         SAEnum(
+            "owner",
             "pm",
             "auditor",
             "stakeholder",

@@ -48,9 +48,9 @@ async def create_sensor_config(
     project_id: uuid.UUID,
     body: ProjectSensorCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ) -> ProjectSensorResponse:
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     # Check uniqueness
     existing = await db.execute(
@@ -96,9 +96,9 @@ async def update_sensor_config(
     sensor_id: uuid.UUID,
     body: ProjectSensorUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ) -> ProjectSensorResponse:
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     result = await db.execute(
         select(ProjectSensor).where(
@@ -126,9 +126,9 @@ async def delete_sensor_config(
     project_id: uuid.UUID,
     sensor_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles("admin", "project_manager")),
+    current_user: User = Depends(get_current_user),
 ) -> None:
-    await require_project_access(project_id, current_user, db, required_roles=["pm"])
+    await require_project_access(project_id, current_user, db, required_roles=["pm", "owner"])
 
     result = await db.execute(
         select(ProjectSensor).where(
