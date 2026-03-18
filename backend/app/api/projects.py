@@ -118,7 +118,7 @@ async def create_project(
     member = ProjectMember(
         project_id=project.id,
         user_id=current_user.id,
-        project_role="pm" if current_user.role == "project_manager" else "admin",
+        project_role="pm",
     )
     db.add(member)
 
